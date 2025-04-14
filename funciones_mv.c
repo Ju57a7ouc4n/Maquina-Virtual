@@ -5,12 +5,12 @@
 //  codReg: IP, EAX EBX
 // inicioSeg:  
 
-int recupera_direccion_operando(int operando,TVM vm){
+int recupera_direccion_operando(int operando,TVM *vm){
     int offset = (operando & MASC_OFFSET) >> 8;
     int cod = (operando & MASC_CODIGO) >> 4;
-    int inicioSeg = (vm.REG[codReg] >> 16) & MASC_SEGMENTO;
-    int offsetReg = vm.REG[codReg] & MASC_SEGMENTO;
-    return vm.SEG[inicioSeg][0] + offsetReg + offset;
+    int inicioSeg = (vm->REG[codReg] >> 16) & MASC_SEGMENTO;
+    int offsetReg = vm->REG[codReg] & MASC_SEGMENTO;
+    return vm->SEG[inicioSeg][0] + offsetReg + offset;
 } 
 
 
@@ -36,7 +36,7 @@ int mascara(int modificador){
     return masc;
 }
 
-int recupera_valor_operando(TVM vm, int top, int operando){
+int recupera_valor_operando(TVM *vm, int top, int operando){
     int valor; //comunes
     int mod,masc; //para registros
     int direccion; //para memoria
@@ -46,7 +46,7 @@ int recupera_valor_operando(TVM vm, int top, int operando){
             mod = (operando & MASC_MODIFICADOR) >> 2; //obtiene el modificador del registro
             cod = (operando & MASC_CODIGO) >> 4; //obtiene el codigo de registro
             mascara_de_registro = mascara(modificador);
-            valor = vm.REG[cod];
+            valor = vm->REG[cod];
             valor = valor & mascara_de_registro;
             if (mod == 2)
                 valor = valor >> 8;
@@ -58,17 +58,26 @@ int recupera_valor_operando(TVM vm, int top, int operando){
         
         case 3: //operando de memoria
             direccion=recupera_direccion_operando(operando,vm);
-            valor=vm.RAM[direccion];
+            for (int i = 0 ; i < TAMCELDA ; i++) {
+                valor = vm->RAM[direccion++]; // CHEQUEAR: al asignar un char a un int se mantienen el resto de bytes del int??
+                valor = valor << 8;          // Si no es asi, somos pollo
+            }
         break;
 
         return valor;
     }
-    
-    
+} 
 
+int jump_valido (TMV vm, int salto){
+    int inicioCS = (vm.SEG[0][0] >> 16) & MASC_SEGMENTO;
+    int finCS = (vm.SEG[0][0] & MASC_SEGMENTO) + inicioCS;
+    return (salto < finCS) && (salto >= inicioCS);
+}
 
-}    
-    
+void jump (TVM *vm,int salto){
+    if (!jump_valido(*vm,salto))
+        vm->error = 3; // Fallo de segmento
+}
     
     :1 esav
     :1 esav

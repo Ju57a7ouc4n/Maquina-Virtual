@@ -6,6 +6,7 @@
 // A es la direccion fisica del dato
 // B depende de topB 
 
+
 void MOV (int A, int opA, int B, int opB, TVM *vm);
 
 void ADD (int A, int opA, int B, int opB, TVM *vm);

@@ -1,7 +1,20 @@
 #include "operaciones.h"
 #include "mascaras.h"
+#include "valores_registros.h"
+#include <stdio.h>
 #include <stdlib.h>
 #define TAMCELDA 4
+
+//Funcion que modica los bits NZ del registro CC 
+void NZ (int valor, TVM *vm){
+    vm->REG[CC] &= 0x3FFFFFFF;
+    
+    if (valor < 0)
+        vm->REG[CC] |= MASC_CC_NEGATIVO;
+    
+    if (valor == 0)
+    vm->REG[CC] |= MASC_CC_CERO;
+}
 
 //FUNCIONES DE DOS PARAMETROS 
 
@@ -30,65 +43,173 @@ void ADD (int A, int topA, int B, int topB, TVM *vm){
     int valB = recupera_valor_operando(vm,topB,B); 
     int valA = recupera_valor_operando(vm,topA,A);
     int suma = valB + valA;
-    MOV(A,topA,suma,topB,vm);
+    MOV(A,topA,suma,2,vm);
+    NZ(suma,vm);
 }
 
 void SUB (int A, int topA, int B, int topB, TVM *vm){
     int valB = recupera_valor_operando(vm,topB,B); 
     int valA = recupera_valor_operando(vm,topA,A);
     int resta = valB - valA;
-    MOV(A,topA,resta,topB,vm);
+    MOV(A,topA,resta,2,vm);
+    NZ(resta,vm);
 }
 
 void SWAP (int A, int topA, int B, int topB, TVM *vm){
     int aux = recupera_valor_operando(vm,topA,A);
     MOV(A,topB,B,topB,vm);
-    MOV(B,topB,aux,topA,vm); // CHEQUEAR
+    MOV(B,topB,aux,topA,vm); //CHEQUEAR
 }
 
-void MUL (int A, int topA, int B, int topB, TVM *vm);
+void MUL (int A, int topA, int B, int topB, TVM *vm){
+    int valB = recupera_valor_operando(vm,topB,B); 
+    int valA = recupera_valor_operando(vm,topA,A);
+    int multiplicacion = valA * valB;
+    MOV (A,topA,multiplicacion,2,vm);
+    NZ(multiplicacion,vm);
+}
 
-void DIV (int A, int topA, int B, int topB, TVM *vm);
+void DIV (int A, int topA, int B, int topB, TVM *vm){
+    int valB = recupera_valor_operando(vm,topB,B); 
+    int valA = recupera_valor_operando(vm,topA,A);
+    if (valB) {
+        int division = valA / valB;
+        int resto = valA % valB;
+        MOV (A,topA,division,2,vm);
+        MOV(AC,1,resto,2,vm);
+        NZ(division,vm);
+    } else
+        vm->error = 2; //Division por cero
+}
 
-void CMP (int A, int topA, int B, int topB, TVM *vm);
+void CMP (int A, int topA, int B, int topB, TVM *vm){
+    int valB = recupera_valor_operando(vm,topB,B); 
+    int valA = recupera_valor_operando(vm,topA,A);
+    int resta = valA - valB;
+    NZ(resta,vm);
+}
 
-void SHL (int A, int topA, int B, int topB, TVM *vm);
+void SHL (int A, int topA, int B, int topB, TVM *vm){
+    int valB = recupera_valor_operando(vm,topB,B);
+    int valA = recupera_valor_operando(vm,topA,A);
+    int desplazamiento = valA << valB;
+    MOV(A,topA,desplazamiento,2,vm);
+    NZ(desplazamiento,vm);
+}
 
-void SHR (int A, int opA, int B, int opB, TVM *vm);
+void SHR (int A, int opA, int B, int opB, TVM *vm){
+    int valB = recupera_valor_operando(vm,topB,B);
+    int valA = recupera_valor_operando(vm,topA,A);
+    int desplazamiento = valA >> valB;
+    MOV(A,topA,desplazamiento,2,vm);
+    NZ(desplazamiento,vm);
+}
 
-void AND (int A, int opA, int B, int opB, TVM *vm);
+void AND (int A, int opA, int B, int opB, TVM *vm){
+    int valB = recupera_valor_operando(vm,topB,B);
+    int valA = recupera_valor_operando(vm,topA,A);
+    int and = valA & valB;
+    MOV(A,topA,and,2,vm);
+    NZ(and,vm);
+}
 
-void OR (int A, int opA, int B, int opB, TVM *vm);
+void OR (int A, int opA, int B, int opB, TVM *vm){
+    int valB = recupera_valor_operando(vm,topB,B);
+    int valA = recupera_valor_operando(vm,topA,A);
+    int or = valA | valB;
+    MOV(A,topA,or,2,vm);
+    NZ(or,vm);
+}
 
-void XOR (int A, int opA, int B, int opB, TVM *vm);
+void XOR (int A, int opA, int B, int opB, TVM *vm){
+    int valB = recupera_valor_operando(vm,topB,B);
+    int valA = recupera_valor_operando(vm,topA,A);
+    int xor = valA ^ valB;
+    MOV(A,topA,xor,2,vm);
+    NZ(xor,vm);
+}
 
-void LDL (int A, int opA, int B, int opB, TVM *vm);
+void LDL (int A, int opA, int B, int opB, TVM *vm){
+    int valB = recupera_valor_operando(vm,topB,B);
+    int valA = recupera_valor_operando(vm,topA,A);
+    
+    MOV(A,topA,desplazamiento,2,vm);
+}
 
-void LDH (int A, int opA, int B, int opB, TVM *vm);
+void LDH (int A, int opA, int B, int opB, TVM *vm){
 
-void RND (int A, int opA, int B, int opB, TVM *vm);
+}
+
+void RND (int A, int opA, int B, int opB, TVM *vm){
+    int valB = recupera_valor_operando(vm,topB,B);
+    int random = rand() % (valB + 1); //rand() genera un numero aleatorio y al hacerle % (valB + 1) se establece el rango entre 0 y valB.
+    MOV(A,topA,random,2,vm);
+}
 
 //FUNCIONES DE UN SOLO PARAMETRO 
 
-void SYS (int A, int opA, TVM *vm);
+void SYS (int A, int opA, TVM *vm){ // TODOS los operandos de entrada son inmediatos??
 
-void JMP (int A, int opA, TVM *vm);
+}
 
-void JZ (int A, int opA, TVM *vm);
+void JMP (int A, int opA, TVM *vm){
+    int valA = recupera_valor_operando(vm,topA,A);
+    jump(vm,valA);
+    if(!vm->error)
+        vm->REG[IP] = vm->SEG[0][0] + valA;
+}
 
-void JP (int A, int opA, TVM *vm);
+void JZ (int A, int opA, TVM *vm){
+    int valA = recupera_valor_operando(vm,topA,A);
+    jump(vm,valA);
+    if((!vm->error) && (vm->REG[CC] & MASC_CC_CERO))
+        vm->REG[IP] = vm->SEG[0][0] + valA;
+}
 
-void JN (int A, int opA, TVM *vm);
+void JP (int A, int opA, TVM *vm){
+    int valA = recupera_valor_operando(vm,topA,A);
+    jump(vm,valA);
+    if((!vm->error) && (!(vm->REG[CC] & MASC_CC_CERO)) && (!(vm->REG[CC] & MASC_CC_NEGATIVO)))
+        vm->REG[IP] = vm->SEG[0][0] + valA;
+}
 
-void JNZ (int A, int opA, TVM *vm);
+void JN (int A, int opA, TVM *vm){
+    int valA = recupera_valor_operando(vm,topA,A);
+    jump(vm,valA);
+    if((!vm->error) && (vm->REG[CC] & MASC_CC_NEGATIVO))
+        vm->REG[IP] = vm->SEG[0][0] + valA;
+}
 
-void JNP (int A, int opA, TVM *vm);
+void JNZ (int A, int opA, TVM *vm){
+    int valA = recupera_valor_operando(vm,topA,A);
+    jump(vm,valA);
+    if((!vm->error) && (!(vm->REG[CC] & MASC_CC_CERO)))
+        vm->REG[IP] = vm->SEG[0][0] + valA;
+}
 
-void JNN (int A, int opA, TVM *vm);
+void JNP (int A, int opA, TVM *vm){
+    int valA = recupera_valor_operando(vm,topA,A);
+    jump(vm,valA);
+    if((!vm->error) && ((vm->REG[CC] & MASC_CC_CERO) || (vm->REG[CC] & MASC_CC_NEGATIVO)))
+        vm->REG[IP] = vm->SEG[0][0] + valA;
+}
 
-void NOT (int A, int opA, TVM *vm);
+void JNN (int A, int opA, TVM *vm){
+    int valA = recupera_valor_operando(vm,topA,A);
+    jump(vm,valA);
+    if((!vm->error) && (!(vm->REG[CC] & MASC_CC_NEGATIVO)))
+        vm->REG[IP] = vm->SEG[0][0] + valA;
+}
 
-void STOP ();
+void NOT (int A, int opA, TVM *vm){
+    int valA = recupera_valor_operando(vm,topA,A);
+    int not = ~valA;
+    MOV(A,topA,not,2,vm);
+    NZ(not,vm);
+}
 
+//FUNCION SIN OPERANDO
 
+int STOP (){
 
+}
