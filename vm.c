@@ -24,7 +24,10 @@ void main(int argc, char *argv[]){
 }
 
 int memologitofisica(unsigned short tabla[ENTRADAS][SEGMENTOS], int dirlogica){ //Funcion que convierte una direccion logica a fisica
-    return (tabla[0][0]+dirlogica);
+    int IPH, offset;
+    IPH= dirlogica >> 16; //Se obtiene la base
+    offset= (dirlogica<<16)>>16; //Se obtiene el offset
+    return (tabla[IPH][0]+offset);
 }
 
 int verificacabecera(char vec[7]){ //Funcion que verifica la cabecera del archivo vmx
@@ -272,28 +275,28 @@ char* devuelveRegistroBajo(char car){
 }
 
 void iniciaEjecucion(char RAM[MEMORIA], unsigned short tabla[ENTRADAS][SEGMENTOS], char *parametro, int argc, int registros[REGISTROS]){ //Funcion que inicia la ejecucion del programa
-    int dirfisica;
+    int dirfisica,dirfisicaaux;
     char orden;
-    registros[IP]=0;
+    registros[IP]=0x10;
     if(argc==2 && strcmp(parametro,"-d")==0){
         printf("Iniciando la ejecucion del programa...\n");
-        while(RAM[memologitofisica(tabla,registros[IP])]!="0x0F"){
-            dirfisica=memologitofisica(tabla,registros[IP]);
+        dirfisica=memologitofisica(tabla,registros[IP]);
+        while(RAM[dirfisica]!="0x0F"){ //Mientras no sea un stop
             printf("[%5.d] ",dirfisica);
             orden=(RAM[dirfisica]|MASC_COD_OPERACION); //Se obtiene la orden a ejecutar
             if(RAM[dirfisica]&MASC_CANT_OP==MASC_CANT_OP){ //Orden con dos operandos
                 imprimeOrdenDosOp(RAM[dirfisica&MASC_COD_OPERACION]); //Imprime la orden
             }
-            else{
-                if(RAM[dirfisica]&MASC_UN_OP==MASC_UN_OP){ //Orden con un operando
+            else{  //Orden con un operando
                     imprimeOrdenUnOp(RAM[dirfisica&MASC_COD_OPERACION]); //Imprime la orden
-                    if(RAM[dirfisica]&MASC_TIPO_OP_B==MASC_TIPO_OP_B) //Es un operando de memoria
+                    if(RAM[dirfisica]&MASC_TIPO_OP_B==MASC_TIPO_OP_B){ //Es un operando de memoria
                         printf("[");
                         imprimeInmediato(RAM[dirfisica+1],RAM[dirfisica+2]);
                         printf("+%s] \n",devuelveRegistro(RAM[dirfisica+3]));
                         /*
                         INVOCACION A LA FUNCION
                         */
+                    }
                     else{
                         if(RAM[dirfisica]&MASC_TIPO_OP_B==0x80){ //Es un operando inmediato
                             printf("%d \n",(int)RAM[dirfisica]);
@@ -325,22 +328,17 @@ void iniciaEjecucion(char RAM[MEMORIA], unsigned short tabla[ENTRADAS][SEGMENTOS
                                         */
                                     }
                                     else{
-                                        if(RAM[dirfisica+1]&0x0C==0x08){
                                             printf("%s \n",devuelveRegistroAlto(RAM[dirfisica+1]));
                                             /*
                                             INVOCACION A LA FUNCION
                                             */
-                                        }
                                     }
                                 }
                             }
-                       }
+                        }
                     }
                 }
-                else{ //Es un stop
-                    printf("STOP /n");
-                }
             }
-        }
+        printf("STOP \n");
     }
 }
