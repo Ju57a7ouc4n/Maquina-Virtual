@@ -5,14 +5,17 @@
 //  codReg: IP, EAX EBX
 // inicioSeg:  
 
+int recupera_direccion_registro(int contenido_registro,TVM *vm){
+    int inicioSeg = (contenido_registro >> 16) & MASC_SEGMENTO;
+    int offsetReg = contenido_registro & MASC_SEGMENTO;
+    return vm->SEG[inicioSeg][0] + offsetReg;
+}
+
 int recupera_direccion_operando(int operando,TVM *vm){
     int offset = (operando & MASC_OFFSET) >> 8;
     int cod = (operando & MASC_CODIGO) >> 4;
-    int inicioSeg = (vm->REG[codReg] >> 16) & MASC_SEGMENTO;
-    int offsetReg = vm->REG[codReg] & MASC_SEGMENTO;
-    return vm->SEG[inicioSeg][0] + offsetReg + offset;
+    return  recupera_direccion_registro(vm->REG[cod],vm) + offset;
 } 
-
 
 int mascara(int modificador){
     int masc;
@@ -36,16 +39,18 @@ int mascara(int modificador){
     return masc;
 }
 
+
+
 int recupera_valor_operando(TVM *vm, int top, int operando){
     int valor; //comunes
-    int mod,masc; //para registros
-    int direccion; //para memoria
+    int mod,masc,cod,mascara_de_registro; //para registros
+    int direccion,celdas; //para memoria
     switch (top){
 
         case 1: //operando de registro
             mod = (operando & MASC_MODIFICADOR) >> 2; //obtiene el modificador del registro
             cod = (operando & MASC_CODIGO) >> 4; //obtiene el codigo de registro
-            mascara_de_registro = mascara(modificador);
+            mascara_de_registro = mascara(mod);
             valor = vm->REG[cod];
             valor = valor & mascara_de_registro;
             if (mod == 2)
@@ -57,18 +62,26 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
         break;
         
         case 3: //operando de memoria
+            valor = 0;
+            mod = (operando & MASC_MODIFICADOR) >> 2;
+            if (mod == 0) 
+                celdas = CANTCELDA;
+            else 
+                if (mod == 3)
+                    celdas = 2;
+                else
+                    celdas = 1;
             direccion=recupera_direccion_operando(operando,vm);
-            for (int i = 0 ; i < TAMCELDA ; i++) {
-                valor = vm->RAM[direccion++]; // CHEQUEAR: al asignar un char a un int se mantienen el resto de bytes del int??
-                valor = valor << 8;          // Si no es asi, somos pollo
+            for (int i = celdas ; i > 0 ; i--) {
+                valor |= vm->RAM[direccion++] << 8*i; 
             }
         break;
-
-        return valor;
     }
+
+    return valor;
 } 
 
-int jump_valido (TMV vm, int salto){
+int jump_valido (TVM vm, int salto){
     int inicioCS = (vm.SEG[0][0] >> 16) & MASC_SEGMENTO;
     int finCS = (vm.SEG[0][0] & MASC_SEGMENTO) + inicioCS;
     return (salto < finCS) && (salto >= inicioCS);
@@ -78,76 +91,30 @@ void jump (TVM *vm,int salto){
     if (!jump_valido(*vm,salto))
         vm->error = 3; // Fallo de segmento
 }
-    
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    :1 esav
-    1 eav
+
+void entrada(int *x,int formato)
+{
+    char c;
+    char aux[100];
+
+    switch(formato)
+    {
+        case 1:
+            scanf("%d",x);
+            break;
+        case 2:
+            scanf("%c",&c);
+            *x = (int)c;
+            //while (getchar() != '\n');
+            break;
+        case 4:
+            scanf("%o",x);
+            break;
+        case 8:
+            scanf("%x",x);
+            break;
+        case 16:
+            scanf("%s",aux);
+            
     }
-
-
-    
-}av
-    }
-
-
-    
-}av
-    }
-
-
-    
-}av
-    }
-
-
-    
-}av
-    }
-
-
-    
-}av
-    }
-
-
-    
 }

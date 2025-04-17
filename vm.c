@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "TVM.h"
 #include "valores_registros.h"
@@ -17,10 +18,36 @@ void cargaCS(char[MEMORIA], unsigned short[ENTRADAS][SEGMENTOS], const char*);
 
 void iniciaEjecucion(); 
 
-void main(int argc, char *argv[]){
-    TVM VMX;
-    cargaCS(VMX.RAM,VMX.SEG,argv[1]); //Carga el segmento de codigo en la memoria
-    iniciaEjecucion(VMX.RAM,VMX.SEG, argv[2], argc,VMX.REG); //Inicia la ejecucion del programa
+void muestraCS(TVM vm );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+int main(int argc, char *argv[]){
+    TVM vmx;
+    vmx.R = REGISTROS;
+    vmx.error = 0;
+    cargaCS(vmx.RAM,vmx.SEG,argv[1]); //Carga el segmento de codigo en la memoria
+    muestraCS(vmx);
+    scanf("");
+ //   iniciaEjecucion(vmx.RAM,vmx.SEG, argv[2], argc,vmx.REG); //Inicia la ejecucion del programa
+    return 0;
 }
 
 int memologitofisica(unsigned short tabla[ENTRADAS][SEGMENTOS], int dirlogica){ //Funcion que convierte una direccion logica a fisica
@@ -41,7 +68,7 @@ int verificacabecera(char vec[7]){ //Funcion que verifica la cabecera del archiv
     }
 }
 
-void cargaCS(char RAM[MEMORIA], unsigned short tabla[ENTRADAS][SEGMENTOS], const char *nombreArchivo){ //Carga el segmento de codigo en la memoria
+void cargaCS(char RAM[], unsigned short tabla[ENTRADAS][SEGMENTOS], const char *nombreArchivo){ //Carga el segmento de codigo en la memoria
     FILE *fichero;
     unsigned char lector;
     char vec[7];
@@ -79,6 +106,15 @@ void cargaCS(char RAM[MEMORIA], unsigned short tabla[ENTRADAS][SEGMENTOS], const
         }
     }
     fclose(fichero);
+    
+}
+
+void muestraCS(TVM vm){
+    for (int i=0; i<vm.SEG[0][1];i++){
+        printf("%d %c",i,vm.RAM[i]);
+    }
+
+
 }
 
 void imprimeOrdenDosOp(char orden){
@@ -107,8 +143,8 @@ void imprimeOrdenDosOp(char orden){
         case 0x17: //SHL
             printf("SHL ");
             break;
-        case 0x18; //SHR
-            printf("SHR ");
+        case 0x18: //SHR
+            print:("SHR ");
             break;
         case 0x19: //AND
             printf("AND ");
@@ -205,7 +241,7 @@ char* devuelveRegistro(char car){
     }
 }
 
-char* devuelveRegistro(char car){
+char* devuelveRegistro2bytes(char car){
     switch(car){
         case 0x10:
             return "AX";
@@ -249,7 +285,7 @@ char* devuelveRegistroBajo(char car){
     }
 }
 
-char* devuelveRegistroBajo(char car){
+char* devuelveRegistroAlto(char car){
     switch(car){
         case 0x10:
             return "AH";
@@ -277,7 +313,7 @@ void iniciaEjecucion(char RAM[MEMORIA], unsigned short tabla[ENTRADAS][SEGMENTOS
     registros[IP]=0;
     if(argc==2 && strcmp(parametro,"-d")==0){
         printf("Iniciando la ejecucion del programa...\n");
-        while(RAM[memologitofisica(tabla,registros[IP])]!="0x0F"){
+        while(RAM[memologitofisica(tabla,registros[IP])] != (char)0x0F){
             dirfisica=memologitofisica(tabla,registros[IP]);
             printf("[%5.d] ",dirfisica);
             orden=(RAM[dirfisica]|MASC_COD_OPERACION); //Se obtiene la orden a ejecutar
@@ -287,14 +323,14 @@ void iniciaEjecucion(char RAM[MEMORIA], unsigned short tabla[ENTRADAS][SEGMENTOS
             else{
                 if(RAM[dirfisica]&MASC_UN_OP==MASC_UN_OP){ //Orden con un operando
                     imprimeOrdenUnOp(RAM[dirfisica&MASC_COD_OPERACION]); //Imprime la orden
-                    if(RAM[dirfisica]&MASC_TIPO_OP_B==MASC_TIPO_OP_B) //Es un operando de memoria
+                    if(RAM[dirfisica]&MASC_TIPO_OP_B==MASC_TIPO_OP_B) { //Es un operando de memoria
                         printf("[");
                         imprimeInmediato(RAM[dirfisica+1],RAM[dirfisica+2]);
                         printf("+%s] \n",devuelveRegistro(RAM[dirfisica+3]));
                         /*
                         INVOCACION A LA FUNCION
                         */
-                    else{
+                    } else {
                         if(RAM[dirfisica]&MASC_TIPO_OP_B==0x80){ //Es un operando inmediato
                             printf("%d \n",(int)RAM[dirfisica]);
                             imprimeInmediato(RAM[dirfisica+1],RAM[dirfisica+2]);
@@ -344,3 +380,7 @@ void iniciaEjecucion(char RAM[MEMORIA], unsigned short tabla[ENTRADAS][SEGMENTOS
         }
     }
 }
+
+
+
+
