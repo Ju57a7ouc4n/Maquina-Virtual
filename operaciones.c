@@ -164,20 +164,32 @@ void RND (int A, int topA, int B, int topB, TVM *vm){
 
 //FUNCIONES DE UN SOLO PARAMETRO 
 
-
-
 void SYS1 (int dir,int celdas,int tamanio,int formato, TVM *vm){
-    int i,x;
+    int x;
 
-    for (i=0 ; i<celdas ; i++){
+    for (int i=0 ; i<celdas ; i++){
         printf("[%04x]: ", dir);
         entrada(&x,formato);
-
-
+        for (int k=tamanio-1 ; k>=0 ; k--){
+            vm->RAM[dir++] = (x & (0xFF<<8*k)) >> (8*k);
+        }
     }
 }
 
-void SYS (int operando, TVM *vm){ // TODOS los operandos de entrada son inmediatos??
+void SYS2 (int dir,int celdas,int tamanio,int formato, TVM *vm){
+    int x;
+
+    for(int i=0 ; i<celdas ; i++){
+        x = 0;
+        printf("[%04x]: ",dir);
+        for(int k=tamanio-1 ; k>=0 ; k--){
+            x |= (vm->RAM[dir++] << (8*k)) & (0xFF << (8*k)); 
+        }
+        salida(x,formato,tamanio);
+    }
+}
+
+void SYS (int operando,int topA, TVM *vm){ // TODOS los operandos de entrada son inmediatos??
     int dirMem = recupera_direccion_operando(vm->REG[EDX],vm);
     int celdas = vm->REG[ECX] & MASC_RL;    
     int tamanio = (vm->REG[ECX] & MASC_RH) >> 8;
