@@ -54,5 +54,3 @@ void JNP (int A, int opA, TVM *vm);
 void JNN (int A, int opA, TVM *vm);
 
 void NOT (int A, int opA, TVM *vm);
-
-void STOP ();

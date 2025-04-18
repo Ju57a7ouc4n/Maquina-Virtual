@@ -3,6 +3,7 @@
 #define SEGMENTOS 2
 #define ENTRADAS 8
 #define MEMORIA 16384
+#define CANTCELDA 4
 
 typedef struct{
     unsigned int REG[REGISTROS],R=REGISTROS; //Registros del Procesador

@@ -3,11 +3,14 @@
 #include "TVM.h"
 #include "valores_registros.h"
 #include "mascaras.h"
+#include "operaciones.h"
 #define REGISTROS 16
 #define SEGMENTOS 2
 #define ENTRADAS 8
 #define MEMORIA 16384
 #define ICS 0
+#define OP1 9
+#define OP2 15
 
 int memologitofisica(unsigned short tabla[ENTRADAS][SEGMENTOS],int);
 
@@ -17,10 +20,13 @@ void cargaCS(char[MEMORIA], unsigned short[ENTRADAS][SEGMENTOS], const char*);
 
 void iniciaEjecucion(); 
 
-void main(int argc, char *argv[]){
+int main(int argc, char *argv[]){      //2 operandos:  xxx1 0101
     TVM VMX;
+    void (*op2op[OP2])(int, int, int, int, TVM*)={MOV, ADD, SUB, SWAP, MUL, DIV, CMP, SHL, SHR, AND, OR, XOR, LDL, LDH, RND};
+    void (*op1op[OP1])(int, int, int, int, TVM*)={SYS, JMP, JZ, JP, JN, JNZ, JNP, JNN, NOT};
     cargaCS(VMX.RAM,VMX.SEG,argv[1]); //Carga el segmento de codigo en la memoria
     iniciaEjecucion(VMX.RAM,VMX.SEG, argv[2], argc,VMX.REG); //Inicia la ejecucion del programa
+    return 0;
 }
 
 int memologitofisica(unsigned short tabla[ENTRADAS][SEGMENTOS], int dirlogica){ //Funcion que convierte una direccion logica a fisica
@@ -110,7 +116,7 @@ void imprimeOrdenDosOp(char orden){
         case 0x17: //SHL
             printf("SHL ");
             break;
-        case 0x18; //SHR
+        case 0x18: //SHR
             printf("SHR ");
             break;
         case 0x19: //AND
@@ -173,6 +179,23 @@ void imprimeInmediato(char car1, char car2){
     i|=(char)car2;
     printf("%d",i);
 }
+int armaInmediato(char car1, char car2){
+    int i=0;
+    i=(char)car1;
+    i=i<<8;
+    i|=(char)car2;
+    return i;
+}
+
+int armaMemoria(char car1, char car2, char car3){
+    int i=0;
+    i=(char)car1;
+    i=i<<16;
+    i|=(char)car2;
+    i=i<<8;
+    i|=(char)car3;
+    return i;
+}
 
 char* devuelveRegistro(char car){
     switch(car){
@@ -208,7 +231,7 @@ char* devuelveRegistro(char car){
     }
 }
 
-char* devuelveRegistro(char car){
+char* devuelveRegistro2bytes(char car){
     switch(car){
         case 0x10:
             return "AX";
@@ -252,7 +275,7 @@ char* devuelveRegistroBajo(char car){
     }
 }
 
-char* devuelveRegistroBajo(char car){
+char* devuelveRegistroAlto(char car){
     switch(car){
         case 0x10:
             return "AH";
@@ -274,71 +297,99 @@ char* devuelveRegistroBajo(char car){
     }
 }
 
-void iniciaEjecucion(char RAM[MEMORIA], unsigned short tabla[ENTRADAS][SEGMENTOS], char *parametro, int argc, int registros[REGISTROS]){ //Funcion que inicia la ejecucion del programa
-    int dirfisica,dirfisicaaux;
+void iniciaEjecucion(TVM *VMX, char *parametro, int argc, void(*op1op[])(), void(*op2op[])() ){ //Funcion que inicia la ejecucion del programa
+    int dirfisica,dirfisicaaux,topA,topB,A,B;
     char orden;
-    registros[IP]=0x10;
-    if(argc==2 && strcmp(parametro,"-d")==0){
+    (*VMX).REG[IP]=0x10;
+    if(argc==3 && strcmp(parametro,"-d")!=0){
         printf("Iniciando la ejecucion del programa...\n");
-        dirfisica=memologitofisica(tabla,registros[IP]);
-        while(RAM[dirfisica]!="0x0F"){ //Mientras no sea un stop
-            printf("[%5.d] ",dirfisica);
-            orden=(RAM[dirfisica]|MASC_COD_OPERACION); //Se obtiene la orden a ejecutar
-            if(RAM[dirfisica]&MASC_CANT_OP==MASC_CANT_OP){ //Orden con dos operandos
-                imprimeOrdenDosOp(RAM[dirfisica&MASC_COD_OPERACION]); //Imprime la orden
+        dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
+        while((*VMX).RAM[dirfisica]!="0x0F"){ //Mientras no sea un stop
+            orden=((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar 
+            //PREGUNTAR SI LA ORDEN ES INVALIDA: cuando el codigo de operacion de la instruccion a ejecutar no existe         
+            topB=(((*VMX).RAM[dirfisica] & MASC_TIPO_OP_B) >> 6) & 0xFF;
+            topA=((*VMX).RAM[dirfisica] & MASC_TIPO_OP_A) >> 4;
+            if(orden&0x10 == 0x10){ //Dos operandos
+                switch (topB){
+                    case 1: //registro.
+                        B = (int)(*VMX).RAM[dirfisica+1];
+                        break;
+                    case 2: //imnediato.
+                        B = armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]);
+                        break;
+                    case 3: //memoria.
+                        B = armaMemoria((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2],(*VMX).RAM[dirfisica+3]);
+                        break;
+                }
+                if(topA==1){ //registro.                
+                    A = (int)(*VMX).RAM[dirfisica+topB+1];
+                }
+                else{  //memoria.
+                    A = armaMemoria((*VMX).RAM[dirfisica+topB+1],(*VMX).RAM[dirfisica+topB+2],(*VMX).RAM[dirfisica+topB+3]);
+                }
+                
+                op2op[orden & 0x0F](A,topA,B,topB,VMX);
+                
             }
-            else{  //Orden con un operando
-                    imprimeOrdenUnOp(RAM[dirfisica&MASC_COD_OPERACION]); //Imprime la orden
-                    if(RAM[dirfisica]&MASC_TIPO_OP_B==MASC_TIPO_OP_B){ //Es un operando de memoria
-                        printf("[");
-                        imprimeInmediato(RAM[dirfisica+1],RAM[dirfisica+2]);
-                        printf("+%s] \n",devuelveRegistro(RAM[dirfisica+3]));
-                        /*
-                        INVOCACION A LA FUNCION
-                        */
-                    }
-                    else{
-                        if(RAM[dirfisica]&MASC_TIPO_OP_B==0x80){ //Es un operando inmediato
-                            printf("%d \n",(int)RAM[dirfisica]);
-                            imprimeInmediato(RAM[dirfisica+1],RAM[dirfisica+2]);
-                            printf(" \n");
-                            /*
-                            INVOCACION A LA FUNCION
-                            */
-                        }
-                        else{ //Es un operando de registro
-                            if(RAM[dirfisica+1]&0x0C==0x00){
-                                printf("%s \n",devuelveRegistro(RAM[dirfisica+1]));
-                                /*
-                                INVOCACION A LA FUNCION
-                                */
-                            }
-                            else{
-                                if(RAM[dirfisica+1]&0x0C==0x0C){
-                                    printf("%s \n",devuelveRegistro2bytes(RAM[dirfisica+1]));
-                                    /*
-                                    INVOCACION A LA FUNCION
-                                    */
-                                }
-                                else{
-                                    if(RAM[dirfisica+1]&0x0C==0x04){
-                                        printf("%s \n",devuelveRegistroBajo(RAM[dirfisica+1]));
-                                        /*
-                                        INVOCACION A LA FUNCION
-                                        */
-                                    }
-                                    else{
-                                            printf("%s \n",devuelveRegistroAlto(RAM[dirfisica+1]));
-                                            /*
-                                            INVOCACION A LA FUNCION
-                                            */
-                                    }
-                                }
-                            }
-                        }
-                    }
+            else{ //Un operando
+                switch (topB){
+                    case 1: //registro.
+                        op1op[orden]((int)(*VMX).RAM[dirfisica+1],topB,VMX);
+                        break;
+                    case 2: //imnediato.
+                        op1op[orden](armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]),topB,VMX);
+                        break;
+                    case 3: //memoria.
+                        op1op[orden](armaMemoria((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2],(*VMX).RAM[dirfisica+3]),topB,VMX);
+                        break;
                 }
             }
-        printf("STOP \n");
+        }
+    }
+    else{
+        printf("Iniciando la ejecucion del programa...\n");
+        dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
+        while((*VMX).RAM[dirfisica]!="0x0F"){ //Mientras no sea un stop
+            orden=((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar         
+            topB=(((*VMX).RAM[dirfisica] & MASC_TIPO_OP_B) >> 6) & 0xFF;
+            topA=((*VMX).RAM[dirfisica] & MASC_TIPO_OP_A) >> 4;
+            if(orden&0x10 == 0x10){ //Dos operandos
+                printf("[%d] \t",dirfisica);
+                switch (topB){
+                    case 1: //registro.
+                        B = (int)(*VMX).RAM[dirfisica+1];
+                        break;
+                    case 2: //imnediato.
+                        B = armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]);
+                        break;
+                    case 3: //memoria.
+                        B = armaMemoria((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2],(*VMX).RAM[dirfisica+3]);
+                        break;
+                }
+                if(topA==1){ //registro.                
+                    A = (int)(*VMX).RAM[dirfisica+topB+1];
+                }
+                else{  //memoria.
+                    A = armaMemoria((*VMX).RAM[dirfisica+topB+1],(*VMX).RAM[dirfisica+topB+2],(*VMX).RAM[dirfisica+topB+3]);
+                }
+                
+                op2op[orden & 0x0F](A,topA,B,topB,VMX);
+                
+            }
+            else{ //Un operando
+                switch (topB){
+                    case 1: //registro.
+                        op1op[orden]((int)(*VMX).RAM[dirfisica+1],topB,VMX);
+                        break;
+                    case 2: //imnediato.
+                        op1op[orden](armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]),topB,VMX);
+                        break;
+                    case 3: //memoria.
+                        op1op[orden](armaMemoria((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2],(*VMX).RAM[dirfisica+3]),topB,VMX);
+                        break;
+                }
+            }
+        }
+        printf("STOP /n");
     }
 }
