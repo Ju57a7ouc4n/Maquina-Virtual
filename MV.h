@@ -5,7 +5,7 @@
 #define MEMORIA 16384
 #define CANTCELDA 4
 
-typedef struct{
+typedef struct TVM{
     unsigned int REG[REGISTROS]; //Registros del Procesador
     unsigned short SEG[ENTRADAS][SEGMENTOS]; //Tabla de Segmentos 
     char RAM[MEMORIA]; //Memoria Principal, char para que la celda ocupe un byte

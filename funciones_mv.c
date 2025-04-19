@@ -2,6 +2,7 @@
 #include <string.h>
 #include "MV.h"
 #include "mascaras.h"
+#include <ctype.h>
 
 //  codReg: IP, EAX EBX
 // inicioSeg:  
@@ -117,7 +118,7 @@ void entrada(int *x,int formato)
         case 16: //binario.
             scanf("%s",aux);
             *x = 0;
-            while(aux[i] != "\0"){
+            while(aux[i]!='\0'){
                 if(aux[i]=='1') 
                     *x |= 1;
                 i++; 
@@ -154,7 +155,8 @@ void salida (int x,int formato,int tamanio){
     }
     if ((formato & 0x02) == 0x02){ //caracter.
         for (int i=tamanio ; i>=0 ; i--){
-            if(isprint(x >> 8*i))
+            int e= x >> 8*i;
+            if(isprint(e))
                 c = x >> 8*i;
             else
                 c = '.';

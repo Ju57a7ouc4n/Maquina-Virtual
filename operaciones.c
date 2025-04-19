@@ -1,6 +1,4 @@
 #include "operaciones.h"
-#include "mascaras.h"
-#include "valores_registros.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -18,7 +16,7 @@ void NZ (int valor, TVM *vm){
 //FUNCIONES DE DOS PARAMETROS 
 
 void MOV (int A, int topA, int B, int topB, TVM *vm) {
-    int valB = recupera_valor_operando(&vm,topB,B); 
+    int valB = recupera_valor_operando(vm,topB,B); 
     int posReg,masc,corr=0; // variables para registros
     int dir,celdas; // variables para memoria
     int modReg; // comun para memoria o registro
@@ -38,7 +36,7 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
         
         // 11: memoria
         case 3:
-            dir = recupera_direccion_operando(A,&vm);
+            dir = recupera_direccion_operando(A,vm);
             if (modReg == 0) // dependiendo el modificador del registro es la cantidad de celdas a modificar
                 celdas = CANTCELDA;
             else 
