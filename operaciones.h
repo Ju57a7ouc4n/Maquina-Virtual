@@ -1,56 +1,58 @@
-#include "MV.h"
+#include "funciones_mv.h"
+#include "mascaras.h"
+#include "valores_registros.h"
+#include <stdio.h>
+
+//t: tipo operando .
+//: tipo operando .
+//  es la direccion fisica del dato
+//  depende de 
 
 
-// topA: tipo operando A.
-// topB: tipo operando B.
-// A es la direccion fisica del dato
-// B depende de topB 
+void MOV (int , int, int , int, TVM*);
 
+void ADD (int , int, int , int, TVM*);
 
-void MOV (int A, int opA, int B, int opB, TVM *vm);
+void SUB (int , int, int , int, TVM*);
 
-void ADD (int A, int opA, int B, int opB, TVM *vm);
+void SWAP (int , int, int , int, TVM*);
 
-void SUB (int A, int opA, int B, int opB, TVM *vm);
+void MUL (int , int, int , int, TVM*);
 
-void SWAP (int A, int opA, int B, int opB, TVM *vm);
+void DIV (int , int, int , int, TVM*);
 
-void MUL (int A, int opA, int B, int opB, TVM *vm);
+void CMP (int , int, int , int, TVM*);
 
-void DIV (int A, int opA, int B, int opB, TVM *vm);
+void SHL (int , int, int , int, TVM*);
 
-void CMP (int A, int opA, int B, int opB, TVM *vm);
+void SHR (int , int, int , int, TVM*);
 
-void SHL (int A, int opA, int B, int opB, TVM *vm);
+void AND (int , int, int , int, TVM*);
 
-void SHR (int A, int opA, int B, int opB, TVM *vm);
+void OR (int , int, int , int, TVM*);
 
-void AND (int A, int opA, int B, int opB, TVM *vm);
+void XOR (int , int, int , int, TVM*);
 
-void OR (int A, int opA, int B, int opB, TVM *vm);
+void LDL (int , int, int , int, TVM*);
 
-void XOR (int A, int opA, int B, int opB, TVM *vm);
+void LDH (int , int, int , int, TVM*);
 
-void LDL (int A, int opA, int B, int opB, TVM *vm);
+void RND (int , int, int , int, TVM*);
 
-void LDH (int A, int opA, int B, int opB, TVM *vm);
+void SYS (int , int, TVM*);
 
-void RND (int A, int opA, int B, int opB, TVM *vm);
+void JMP (int , int, TVM*);
 
-void SYS (int A, int opA, TVM *vm);
+void JZ (int , int, TVM*);
 
-void JMP (int A, int opA, TVM *vm);
+void JP (int , int, TVM*);
 
-void JZ (int A, int opA, TVM *vm);
+void JN (int , int, TVM*);
 
-void JP (int A, int opA, TVM *vm);
+void JNZ (int , int, TVM*);
 
-void JN (int A, int opA, TVM *vm);
+void JNP (int , int, TVM*);
 
-void JNZ (int A, int opA, TVM *vm);
+void JNN (int , int, TVM*);
 
-void JNP (int A, int opA, TVM *vm);
-
-void JNN (int A, int opA, TVM *vm);
-
-void NOT (int A, int opA, TVM *vm);
+void NOT (int , int, TVM*);

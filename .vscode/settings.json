@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "stdio.h": "c",
+        "mv.h": "c",
+        "valores_registros.h": "c"
+    }
+}
