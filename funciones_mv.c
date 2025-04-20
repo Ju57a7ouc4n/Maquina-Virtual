@@ -8,14 +8,14 @@
 // inicioSeg:  
 
 int recupera_direccion_registro(int contenido_registro,TVM *vm){
-    int inicioSeg = (contenido_registro >> 16) & MASC_SEGMENTO;
-    int offsetReg = contenido_registro & MASC_SEGMENTO;
+    int inicioSeg = (unsigned int)(contenido_registro >> 16) & MASC_SEGMENTO;
+    int offsetReg = (unsigned int)contenido_registro & MASC_SEGMENTO;
     return vm->SEG[inicioSeg][0] + offsetReg;
 }
 
 int recupera_direccion_operando(int operando,TVM *vm){
-    int offset = (operando >> 8) & MASC_OFFSET;
-    int cod = (operando >> 4) & MASC_CODIGO;
+    int offset = (unsigned int)(operando & MASC_OFFSET) >> 8 ;
+    int cod = (unsigned int)(operando & 0x000000F0 )>> 4;
     return  recupera_direccion_registro(vm->REG[cod],vm) + offset;
 } 
 

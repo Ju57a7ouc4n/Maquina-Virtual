@@ -96,32 +96,32 @@ void imprimeMemoria(char car1, char car2, char car3){
     i=(char)car1;
     i=i<<8;
     i|=(char)car2;
-    aux=((unsigned char)car3>>4);
+    aux=((unsigned char)car3>>4); // 1111 0000 >> 0000 1111
     printf("[%s+%d]",devuelveRegistro(aux),i);
 }
 
 void imprimeRegistro(char car){
-    unsigned char aux;
-    aux=(unsigned char)(car & 0x0C)>>2; // 0000 1100 >> 0000 0011
-    switch(aux){
+    unsigned char aux1,aux2;
+    aux1=(unsigned char)(car & 0x0C)>>2; // 0000 1100 >> 0000 0011
+    aux2=((unsigned char)car>>4);
+    switch(aux1){
         case 0x00:
-            printf("%s",devuelveRegistro(car));
+            printf("%s",devuelveRegistro(aux2));
             break;
         case 0x01:
-            printf("%s",devuelveRegistro2bytes(car));
+            printf("%s",devuelveRegistro2bytes(aux2));
             break;
         case 0x02:
-            printf("%s",devuelveRegistroAlto(car));
+            printf("%s",devuelveRegistroAlto(aux2));
             break;
         case 0x03:
-            printf("%s",devuelveRegistroBajo(car));
+            printf("%s",devuelveRegistroBajo(aux2));
             break;
     }
 }
 
 char* devuelveRegistro(unsigned char car){
-    unsigned char aux=(car & 0xF0)>>4; // 1111 0000 >> 0000 1111
-    switch(aux){
+    switch(car){
         case 0x00:
             return "CS";
             break;
@@ -158,8 +158,7 @@ char* devuelveRegistro(unsigned char car){
 }
 
 char* devuelveRegistro2bytes(unsigned char car){
-    unsigned char aux=(car & 0xF0)>>4; // 1111 0000 >> 0000 1111
-    switch(aux){
+    switch(car){
         case 0x0A:
             return "AX";
             break;
@@ -181,8 +180,7 @@ char* devuelveRegistro2bytes(unsigned char car){
 }
 
 char* devuelveRegistroBajo(unsigned char car){
-    unsigned char aux=(car & 0xF0)>>4; // 1111 0000 >> 0000 1111
-    switch(aux){
+    switch(car){
         case 0x0A:
             return "AL";
             break;
@@ -204,8 +202,7 @@ char* devuelveRegistroBajo(unsigned char car){
 }
 
 char* devuelveRegistroAlto(unsigned char car){
-    unsigned char aux=(car & 0xF0)>>4; // 1111 0000 >> 0000 1111
-    switch(aux){
+    switch(car){
         case 0x0A:
             return "AH";
             break;

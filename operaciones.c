@@ -45,7 +45,8 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
                     celdas = 1;
             for (int i = celdas; i>0; i--){
                 vm->RAM[dir++] = valB >> ((i-1)*8);  //se descartan los bits mas significativos
-            }                             
+            } 
+            break;                            
         }
 }
 
