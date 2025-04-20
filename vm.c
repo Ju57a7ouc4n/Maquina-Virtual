@@ -39,10 +39,9 @@ int main(int argc, char *argv[]){      //2 operandos:  xxx1 0101
 }
 
 int memologitofisica(unsigned short tabla[ENTRADAS][SEGMENTOS], unsigned int dirlogica){ //Funcion que convierte una direccion logica a fisica
-    int IPH=0, offset=0;
+    unsigned int IPH=0, offset=0;
+    offset|=(dirlogica & 0x0000FFFF); //Se obtiene el offset
     IPH=((dirlogica >> 16) & 0xFFFF0000); //Se obtiene la base
-    offset|=dirlogica; //Se obtiene el offset
-    printf("%d \n",dirlogica);
     return (tabla[IPH][0]+offset);
 }
 
@@ -122,44 +121,46 @@ int armaMemoria(char car1, char car2, char car3){
 }
 
 void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*op2op[])() ){ //Funcion que inicia la ejecucion del programa
-    int dirfisica,dirfisicaTCS,topA,topB,A,B,assemb=0;
-    char orden;
-    (*VMX).REG[CS] = 0x00;
-    (*VMX).REG[IP] = 0x00;  // SEG[0][1]
-    (*VMX).REG[DS] = 0x00+13;        //  REG[DS] = 00000000 00000001 00000000 00000000
+    int dirfisica,dirfisicaTCS,topA,topB,A,B,assemb=0,aux;
+    char orden,cantejecuciones=0;
+    (*VMX).REG[CS] = 0x00000000;
+    (*VMX).REG[IP] = 0x00000000;  // SEG[0][1]
+    (*VMX).REG[DS] = 0x00000000+13;        //  REG[DS] = 00000000 00000001 00000000 00000000
     if(argc==3 && strcmp(argv[2],"-d")==0){
-        printf("%u \n",(*VMX).REG[IP]);
         dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
         while((*VMX).error==0 && (*VMX).RAM[dirfisica] != 0x0F){ //Mientras no sea un stop y no hay error
-            orden=((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar 
+            orden=(char)((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar 
+            cantejecuciones++;
+            printf("Ejecucion %d: ",cantejecuciones);
             if(!(orden>=0x00 && orden<=0x08) && !(orden>=0x0F && orden<=0x1E)){ ///PREGUNTA SI LA ORDEN ES INVALIDA: cuando el codigo de operacion de la instruccion a ejecutar no existe 
                 (*VMX).error= 1;
             }
             else{          
-                topB=(((*VMX).RAM[dirfisica] & MASC_TIPO_OP_B) >> 6) & 0xFF;
+                topB=(((*VMX).RAM[dirfisica] & MASC_TIPO_OP_B) >> 6);
                 topA=((*VMX).RAM[dirfisica] & MASC_TIPO_OP_A) >> 4;
-                if(orden&0x10 == 0x10){ //Dos operandos
-                    (*VMX).REG[IP]+=topA+topB+1; //Se actualiza el registro IP
-                    printf("[%d] \t",dirfisica);
+                if((orden&0x10) == 0x10){ //Dos operandos
+                    (*VMX).REG[IP] = (0x00010000) | (((*VMX).REG[IP] & 0x00007FFF) + topA + topB + 1); //Se actualiza el registro IP
+                    printf("[%4.4d] \t",dirfisica);
                     imprimeOrdenDosOp(orden);
                     switch (topB){
-                        case 1: //registro.
-                            B = (int)(*VMX).RAM[dirfisica+1];  
+                        case 0x01: //registro.
+                            B = 0;
+                            B |= (unsigned char)(*VMX).RAM[dirfisica+1];  
                             assemb=1;
                             break;
-                        case 2: //imnediato.
+                        case 0x02: //imnediato.
                             B = armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]);
                             assemb=2;
                             break;
-                        case 3: //memoria.
+                        case 0x03: //memoria.
                             B = armaMemoria((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2],(*VMX).RAM[dirfisica+3]);
                             assemb=3;
                             break;
                     }
-                    if(topA==1){ //registro.
+                    if(topA==0x01){ //registro.
                         imprimeRegistro((*VMX).RAM[dirfisica+topB+1]);
                         printf(",");                
-                        A = (int)(*VMX).RAM[dirfisica+topB+1];
+                        A |= (*VMX).RAM[dirfisica+topB+1];
                     }
                     else{  //memoria.
                         imprimeMemoria((*VMX).RAM[dirfisica+topB+1],(*VMX).RAM[dirfisica+topB+2],(*VMX).RAM[dirfisica+topB+3]);
@@ -178,27 +179,27 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
                             break;
                     }
                     printf("\n");
-                    op2op[orden](A,topA,B,topB,VMX);
+                    op2op[(orden & 0x0F)](A,topA,B,topB,VMX);
                 }
                 else{ //Un operando
                     (*VMX).REG[IP]+=topB+1; //Se actualiza el registro IP
                     switch (topB){
-                        case 1: //registro.
+                        case 0x01: //registro.
                             imprimeOrdenUnOp(orden);
                             imprimeRegistro((*VMX).RAM[dirfisica+1]);
-                            op1op[orden]((int)(*VMX).RAM[dirfisica+1],topB,VMX);
+                            op1op[(orden & 0x0F)]((int)(*VMX).RAM[dirfisica+1],topB,VMX);
                         printf("\n");
                             break;
-                        case 2: //imnediato.
+                        case 0x02: //imnediato.
                             imprimeOrdenUnOp(orden);
                             imprimeInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]);
-                            op1op[orden](armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]),topB,VMX);
+                            op1op[(orden & 0x0F)](armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]),topB,VMX);
                             printf("\n");
                             break;
-                        case 3: //memoria.
+                        case 0x03: //memoria.
                             imprimeOrdenUnOp(orden);
                             imprimeMemoria((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2],(*VMX).RAM[dirfisica+3]);
-                            op1op[orden](armaMemoria((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2],(*VMX).RAM[dirfisica+3]),topB,VMX);
+                            op1op[(orden & 0x0F)](armaMemoria((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2],(*VMX).RAM[dirfisica+3]),topB,VMX);
                             printf("\n");
                           break;
                     }
@@ -226,41 +227,42 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
                 (*VMX).error= 1;
             }
             else{      
-                topB=(((*VMX).RAM[dirfisica] & MASC_TIPO_OP_B) >> 6) & 0xFF;
+                topB=(((*VMX).RAM[dirfisica] & MASC_TIPO_OP_B) >> 6);
                 topA=((*VMX).RAM[dirfisica] & MASC_TIPO_OP_A) >> 4;
-                if(orden&0x10 == 0x10){ //Dos operandos
+                if((orden&0x10) == 0x10){ //Dos operandos
                     (*VMX).REG[IP]+=topA+topB+1; //Se actualiza el registro IP
                     switch (topB){
-                        case 1: //registro.
-                            B = (int)(*VMX).RAM[dirfisica+1];
+                        case 0x01: //registro.
+                            B=0;
+                            B |= (*VMX).RAM[dirfisica+1];
                             break;
-                        case 2: //imnediato.
+                        case 0x02: //imnediato.
                             B = armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]);
                             break;
-                        case 3: //memoria.
+                        case 0x03: //memoria.
                             B = armaMemoria((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2],(*VMX).RAM[dirfisica+3]);
                             break;
                     }
-                    if(topA==1){ //registro.                
+                    if(topA==0x01){ //registro.                
                         A = (int)(*VMX).RAM[dirfisica+topB+1];
                     }
                     else{  //memoria.
                         A = armaMemoria((*VMX).RAM[dirfisica+topB+1],(*VMX).RAM[dirfisica+topB+2],(*VMX).RAM[dirfisica+topB+3]);
                     }
 
-                    op2op[orden](A,topA,B,topB,VMX);
+                    op2op[(orden & 0x0F)](A,topA,B,topB,VMX);
                 }
                 else{ //Un operando
                     (*VMX).REG[IP]+=topB+1; //Se actualiza el registro IP
                     switch (topB){
-                        case 1: //registro.
-                            op1op[orden]((int)(*VMX).RAM[dirfisica+1],topB,VMX);
+                        case 0x01: //registro.
+                            op1op[(orden & 0x0F)]((int)(*VMX).RAM[dirfisica+1],topB,VMX);
                             break;
-                        case 2: //imnediato.
-                            op1op[orden](armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]),topB,VMX);
+                        case 0x02: //imnediato.
+                            op1op[(orden & 0x0F)](armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]),topB,VMX);
                             break;
-                        case 3: //memoria.
-                            op1op[orden](armaMemoria((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2],(*VMX).RAM[dirfisica+3]),topB,VMX);
+                        case 0x03: //memoria.
+                            op1op[(orden &0x0F)](armaMemoria((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2],(*VMX).RAM[dirfisica+3]),topB,VMX);
                             break;
                     }
                 }

@@ -16,26 +16,25 @@ void NZ (int valor, TVM *vm){
 //FUNCIONES DE DOS PARAMETROS 
 
 void MOV (int A, int topA, int B, int topB, TVM *vm) {
-    int valB = recupera_valor_operando(vm,topB,B); 
+    int valB = recupera_valor_operando(vm,topB,B);
     int posReg,masc,corr=0; // variables para registros
     int dir,celdas; // variables para memoria
     int modReg; // comun para memoria o registro
-
-    modReg = (A >> 2) & MASC_MODIFICADOR;;
+    modReg = (A & MASC_MODIFICADOR)>>2;
     switch(topA){
 
         // 01: registro
-        case 1:
+        case 0x01:
             masc = mascara(modReg);
-            if (modReg == 2)
+            if (modReg == 0x02)
                 corr = 1;
-            posReg = A >> 4;
+            posReg = (unsigned int)(A & 0xF0) >> 4;
             valB = valB << (corr*8);
             vm->REG[posReg] = (vm->REG[posReg] & (~masc)) | (valB & masc);
         break;   
         
         // 11: memoria
-        case 3:
+        case 0x03:
             dir = recupera_direccion_operando(A,vm);
             if (modReg == 0) // dependiendo el modificador del registro es la cantidad de celdas a modificar
                 celdas = CANTCELDA;

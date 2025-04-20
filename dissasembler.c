@@ -97,30 +97,31 @@ void imprimeMemoria(char car1, char car2, char car3){
     i=i<<8;
     i|=(char)car2;
     aux=((unsigned char)car3>>4);
-    printf("[%d+%s]",i,devuelveRegistro(aux));
+    printf("[%s+%d]",devuelveRegistro(aux),i);
 }
 
 void imprimeRegistro(char car){
-    char aux;
-    aux=car & 0x0B;
+    unsigned char aux;
+    aux=(unsigned char)(car & 0x0C)>>2; // 0000 1100 >> 0000 0011
     switch(aux){
         case 0x00:
             printf("%s",devuelveRegistro(car));
             break;
-        case 0x0B:
+        case 0x01:
             printf("%s",devuelveRegistro2bytes(car));
             break;
-        case 0x08:
-            printf("%s",devuelveRegistroBajo(car));
-            break;
-        case 0x04:
+        case 0x02:
             printf("%s",devuelveRegistroAlto(car));
+            break;
+        case 0x03:
+            printf("%s",devuelveRegistroBajo(car));
             break;
     }
 }
 
 char* devuelveRegistro(unsigned char car){
-    switch(car){
+    unsigned char aux=(car & 0xF0)>>4; // 1111 0000 >> 0000 1111
+    switch(aux){
         case 0x00:
             return "CS";
             break;
@@ -133,88 +134,94 @@ char* devuelveRegistro(unsigned char car){
         case 0x08:
             return "CC";
             break;
-        case 0x10:
+        case 0x09:
+            return "AC";
+            break;
+        case 0x0A:
             return "EAX";
             break;
-        case 0x11:
+        case 0x0B:
             return "EBX";
             break;
-        case 0x12:
+        case 0x0C:
             return "ECX";
             break;
-        case 0x13:
+        case 0x0D:
             return "EDX";
             break;
-        case 0x14:
+        case 0x0E:
             return "EEX";
             break;
-        case 0x15:
+        case 0x0F:
             return "EFX";
     }
 }
 
 char* devuelveRegistro2bytes(unsigned char car){
-    switch(car){
-        case 0x10:
+    unsigned char aux=(car & 0xF0)>>4; // 1111 0000 >> 0000 1111
+    switch(aux){
+        case 0x0A:
             return "AX";
             break;
-        case 0x11:
+        case 0x0B:
             return "BX";
             break;
-        case 0x12:
+        case 0x0C:
             return "CX";
             break;
-        case 0x13:
+        case 0x0D:
             return "DX";
             break;
-        case 0x14:
+        case 0x0E:
             return "EX";
             break;
-        case 0x15:
+        case 0x0F:
             return "FX";
     }
 }
 
 char* devuelveRegistroBajo(unsigned char car){
-    switch(car){
-        case 0x10:
+    unsigned char aux=(car & 0xF0)>>4; // 1111 0000 >> 0000 1111
+    switch(aux){
+        case 0x0A:
             return "AL";
             break;
-        case 0x11:
+        case 0x0B:
             return "BL";
             break;
-        case 0x12:
+        case 0x0C:
             return "CL";
             break;
-        case 0x13:
+        case 0x0D:
             return "DL";
             break;
-        case 0x14:
+        case 0x0E:
             return "EL";
             break;
-        case 0x15:
+        case 0x0F:
             return "FL";
     }
 }
 
 char* devuelveRegistroAlto(unsigned char car){
-    switch(car){
-        case 0x10:
+    unsigned char aux=(car & 0xF0)>>4; // 1111 0000 >> 0000 1111
+    switch(aux){
+        case 0x0A:
             return "AH";
             break;
-        case 0x11:
+        case 0x0B:
             return "BH";
             break;
-        case 0x12:
+        case 0x0C:
             return "CH";
             break;
-        case 0x13:
+        case 0x0D:
             return "DH";
             break;
-        case 0x14:
+        case 0x0E:
             return "EH";
             break;
-        case 0x15:
+        case 0x0F:
             return "FH";
     }
 }

@@ -49,7 +49,7 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
     int direccion,celdas; //para memoria
     switch (top){
 
-        case 1: //operando de registro
+        case 0x01: //operando de registro
             mod = (operando >> 2) & MASC_MODIFICADOR; //obtiene el modificador del registro
             cod = (operando >> 4) & MASC_CODIGO; //obtiene el codigo de registro
             mascara_de_registro = mascara(mod);
@@ -59,11 +59,11 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
                 valor = valor >> 8;
         break;
         
-        case 2: //operando inmediato
+        case 0x02: //operando inmediato
             valor=operando;
         break;
         
-        case 3: //operando de memoria
+        case 0x03: //operando de memoria
             valor = 0;
             mod = (operando >> 2) & MASC_MODIFICADOR;
             if (mod == 0) 
