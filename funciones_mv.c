@@ -14,8 +14,8 @@ int recupera_direccion_registro(int contenido_registro,TVM *vm){
 }
 
 int recupera_direccion_operando(int operando,TVM *vm){
-    int offset = (operando & MASC_OFFSET) >> 8;
-    int cod = (operando & MASC_CODIGO) >> 4;
+    int offset = (operando >> 8) & MASC_OFFSET;
+    int cod = (operando >> 4) & MASC_CODIGO;
     return  recupera_direccion_registro(vm->REG[cod],vm) + offset;
 } 
 
@@ -50,8 +50,8 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
     switch (top){
 
         case 1: //operando de registro
-            mod = (operando & MASC_MODIFICADOR) >> 2; //obtiene el modificador del registro
-            cod = (operando & MASC_CODIGO) >> 4; //obtiene el codigo de registro
+            mod = (operando >> 2) & MASC_MODIFICADOR; //obtiene el modificador del registro
+            cod = (operando >> 4) & MASC_CODIGO; //obtiene el codigo de registro
             mascara_de_registro = mascara(mod);
             valor = vm->REG[cod];
             valor = valor & mascara_de_registro;
@@ -65,7 +65,7 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
         
         case 3: //operando de memoria
             valor = 0;
-            mod = (operando & MASC_MODIFICADOR) >> 2;
+            mod = (operando >> 2) & MASC_MODIFICADOR;
             if (mod == 0) 
                 celdas = CANTCELDA;
             else 

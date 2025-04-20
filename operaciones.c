@@ -21,7 +21,7 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
     int dir,celdas; // variables para memoria
     int modReg; // comun para memoria o registro
 
-    modReg = (A & MASC_MODIFICADOR) >> 2;;
+    modReg = (A >> 2) & MASC_MODIFICADOR;;
     switch(topA){
 
         // 01: registro
@@ -68,8 +68,8 @@ void SUB (int A, int topA, int B, int topB, TVM *vm){
 
 void SWAP (int A, int topA, int B, int topB, TVM *vm){
     int aux = recupera_valor_operando(vm,topA,A);
-    MOV(A,topB,B,topB,vm);
-    MOV(B,topB,aux,topA,vm); //CHEQUEAR
+    MOV(A,topA,B,topB,vm);
+    MOV(B,topB,aux,2,vm); //CHEQUEAR
 }
 
 void MUL (int A, int topA, int B, int topB, TVM *vm){
@@ -190,7 +190,7 @@ void SYS2 (int dir,int celdas,int tamanio,int formato, TVM *vm){
 void SYS (int operando,int topA, TVM *vm){ // TODOS los operandos de entrada son inmediatos??
     int dirMem = recupera_direccion_operando(vm->REG[EDX],vm);
     int celdas = vm->REG[ECX] & MASC_RL;    
-    int tamanio = (vm->REG[ECX] & MASC_RH) >> 8;
+    int tamanio = (vm->REG[ECX] >> 8) & MASC_RH;
     int formato = vm->REG[EAX] & MASC_RL;
 
     switch (operando){

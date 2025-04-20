@@ -40,7 +40,7 @@ int main(int argc, char *argv[]){      //2 operandos:  xxx1 0101
 
 int memologitofisica(unsigned short tabla[ENTRADAS][SEGMENTOS], unsigned int dirlogica){ //Funcion que convierte una direccion logica a fisica
     int IPH=0, offset=0;
-    IPH=((dirlogica&0xFFFF0000) >> 16); //Se obtiene la base
+    IPH=((dirlogica >> 16) & 0xFFFF0000); //Se obtiene la base
     offset|=dirlogica; //Se obtiene el offset
     printf("%d \n",dirlogica);
     return (tabla[IPH][0]+offset);
