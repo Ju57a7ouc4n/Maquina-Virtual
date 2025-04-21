@@ -8,33 +8,33 @@
 // inicioSeg:  
 
 int recupera_direccion_registro(int contenido_registro,TVM *vm){
-    int inicioSeg = (unsigned int)(contenido_registro >> 16) & MASC_SEGMENTO;
+    int inicioSeg = (unsigned int)(contenido_registro & 0xFFFF0000) >> 16;
     int offsetReg = (unsigned int)contenido_registro & MASC_SEGMENTO;
-    return vm->SEG[inicioSeg][0] + offsetReg;
+    return ((*vm).SEG[inicioSeg][0] + offsetReg);
 }
 
-int recupera_direccion_operando(int operando,TVM *vm){
+int recupera_direccion_operando(int operando,TVM *vm){ // 00000000 00000000 00000000 00000000
     int offset = (unsigned int)(operando & MASC_OFFSET) >> 8 ;
     int cod = (unsigned int)(operando & 0x000000F0 )>> 4;
-    return  recupera_direccion_registro(vm->REG[cod],vm) + offset;
+    return  (recupera_direccion_registro((*vm).REG[cod],vm) + offset);
 } 
 
 int mascara(int modificador){
     int masc;
     switch(modificador){
-        case 0:
+        case 0x00:
              masc = MASC_ERX;
         break;
 
-        case 1:
+        case 0x01:
             masc = MASC_RL;
         break;
 
-        case 2:
+        case 0x02:
             masc= MASC_RH;
         break;
 
-        case 3:
+        case 0x03:
             masc = MASC_RX;
         break;
     }
@@ -50,13 +50,13 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
     switch (top){
 
         case 0x01: //operando de registro
-            mod = (operando >> 2) & MASC_MODIFICADOR; //obtiene el modificador del registro
-            cod = (operando >> 4) & MASC_CODIGO; //obtiene el codigo de registro
+            mod = (unsigned int)(operando & MASC_MODIFICADOR) >> 2; //obtiene el modificador del registro
+            cod = (unsigned int)(operando & MASC_CODIGO) >> 4 ; //obtiene el codigo de registro
             mascara_de_registro = mascara(mod);
-            valor = vm->REG[cod];
+            valor = (*vm).REG[cod];
             valor = valor & mascara_de_registro;
             if (mod == 2)
-                valor = valor >> 8;
+                valor = (unsigned int)valor >> 8;
         break;
         
         case 0x02: //operando inmediato
@@ -65,7 +65,7 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
         
         case 0x03: //operando de memoria
             valor = 0;
-            mod = (operando >> 2) & MASC_MODIFICADOR;
+            mod = (unsigned int)(operando & MASC_MODIFICADOR) >> 2 ;
             if (mod == 0) 
                 celdas = CANTCELDA;
             else 
@@ -84,8 +84,8 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
 } 
 
 int jump_valido (TVM vm, int salto){
-    int inicioCS = (vm.SEG[0][0] >> 16) & MASC_SEGMENTO;
-    int finCS = (vm.SEG[0][0] & MASC_SEGMENTO) + inicioCS;
+    int inicioCS = vm.SEG[0][0];
+    int finCS = vm.SEG[0][1] + inicioCS;
     return (salto < finCS) && (salto >= inicioCS);
 }
 
@@ -101,21 +101,21 @@ void entrada(int *x,int formato)
 
     switch(formato)
     {
-        case 1: //decimal.
+        case 0x01: //decimal.
             scanf("%d",x);
             break;
-        case 2: //caracter.
+        case 0x02: //caracter.
             scanf("%c",&c); 
             *x = (int)c;
             while (getchar() != '\n');
             break;
-        case 4: //octal.
+        case 0x04: //octal.
             scanf("%o",x);
             break;
-        case 8: //hexadecimal.
+        case 0x08: //hexadecimal.
             scanf("%x",x);
             break;
-        case 16: //binario.
+        case 0x10: //binario.
             scanf("%s",aux);
             *x = 0;
             while(aux[i]!='\0'){

@@ -16,11 +16,12 @@ void NZ (int valor, TVM *vm){
 //FUNCIONES DE DOS PARAMETROS 
 
 void MOV (int A, int topA, int B, int topB, TVM *vm) {
-    int valB = recupera_valor_operando(vm,topB,B);
+    int valB =0; 
     int posReg,masc,corr=0; // variables para registros
     int dir,celdas; // variables para memoria
-    int modReg; // comun para memoria o registro
-    modReg = (A & MASC_MODIFICADOR)>>2;
+    int modReg=0; // comun para memoria o registro
+    valB=recupera_valor_operando(vm,topB,B);
+    modReg = (A & 0x0000000C) >> 2; //00000000 00000000 00000000 00001100
     switch(topA){
 
         // 01: registro
@@ -28,10 +29,10 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
             masc = mascara(modReg);
             if (modReg == 0x02)
                 corr = 1;
-            posReg = (unsigned int)(A & 0xF0) >> 4;
-            valB = valB << (corr*8);
-            vm->REG[posReg] = (vm->REG[posReg] & (~masc)) | (valB & masc);
-        break;   
+            posReg = (unsigned int)(A & MASC_CODIGO) >> 4; // 00000000 00000000 00000000 11110000
+            valB =(unsigned int) valB << (corr*8);
+            (*vm).REG[posReg] = ((*vm).REG[posReg] & (~masc)) | (valB & masc);
+        break;  
         
         // 11: memoria
         case 0x03:
@@ -176,28 +177,28 @@ void SYS1 (int dir,int celdas,int tamanio,int formato, TVM *vm){
 
 void SYS2 (int dir,int celdas,int tamanio,int formato, TVM *vm){
     int x;
-
+    printf("\n");
     for(int i=0 ; i<celdas ; i++){
         x = 0;
         printf("[%04x]: ",dir);
         for(int k=tamanio-1 ; k>=0 ; k--){
-            x |= (vm->RAM[dir++] << (8*k)) & (0xFF << (8*k)); 
+            x |= (vm->RAM[dir++] << (8*k)) & (0xFF << (8*k));
         }
         salida(x,formato,tamanio);
     }
 }
 
 void SYS (int operando,int topA, TVM *vm){ // TODOS los operandos de entrada son inmediatos??
-    int dirMem = recupera_direccion_operando(vm->REG[EDX],vm);
-    int celdas = vm->REG[ECX] & MASC_RL;    
-    int tamanio = (vm->REG[ECX] >> 8) & MASC_RH;
-    int formato = vm->REG[EAX] & MASC_RL;
-
+    int dirMem = (((*vm).SEG[1][0])) + ((*vm).REG[EDX]&0x0000FFFF);
+    //int dirMem = recupera_direccion_registro((*vm).REG[EDX],vm);
+    int celdas = (unsigned int)(*vm).REG[ECX] & MASC_RL;
+    int tamanio = (unsigned int)((*vm).REG[ECX] & MASC_RH) >> 8;
+    int formato = (unsigned int)(*vm).REG[EAX] & MASC_RL;
     switch (operando){
-        case 1:
+        case 0x01:
             SYS1(dirMem,celdas,tamanio,formato,vm);
             break;
-        case 2:
+        case 0x02:
             SYS2(dirMem,celdas,tamanio,formato,vm);
             break;
     }

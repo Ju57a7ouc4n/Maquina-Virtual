@@ -35,12 +35,6 @@ int main(int argc, char *argv[]){      //2 operandos:  xxx1 0101
         cargaCS(&VMX,argv[1],&compatible); //Carga el segmento de codigo en la memoria
         (compatible)?iniciaEjecucion(&VMX,argv,argc,op1op,op2op):printf("El archivo no es compatible. \n"); //Inicia la ejecucion del programa
     }
-    j=VMX.SEG[1][0]+3;
-    for(i=0;i<4;i++){
-        printf("RAM[%d]: %d \n",j,VMX.RAM[j]);
-        j+=1;
-    }
-    return 0;
 }
 
 int memologitofisica(unsigned short tabla[ENTRADAS][SEGMENTOS], unsigned int dirlogica){ //Funcion que convierte una direccion logica a fisica
@@ -81,7 +75,7 @@ void armaTabla(TVM *VMX, int tamanioCS,int posCS,int posDS){ //Arma la tabla de 
 void cargaCS(TVM *VMX,char *nombreArchivo,int *compatible){ //Carga el segmento de codigo en la memoria
     FILE *fichero;
     unsigned char lector;
-    char vec[7];
+    char vec[5];
     int i=0,j=0,TCS=0, posCS = 0, posDS = 1; 
     fichero=fopen(nombreArchivo,"rb");
     if (fichero==NULL){
@@ -159,20 +153,24 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
                             assemb=1;
                             break;
                         case 0x02: //imnediato.
+                            B=0;
                             B = armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]);
                             assemb=2;
                             break;
                         case 0x03: //memoria.
+                            B=0;
                             B = armaMemoria((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2],(*VMX).RAM[dirfisica+3]);
                             assemb=3;
                             break;
                     }
                     if(topA==0x01){ //registro.
+                        A=0;
                         imprimeRegistro((*VMX).RAM[dirfisica+topB+1]);
                         printf(",");                
-                        A |= (*VMX).RAM[dirfisica+topB+1];
+                        A |= (unsigned char)(*VMX).RAM[dirfisica+topB+1];
                     }
                     else{  //memoria.
+                        A=0;
                         imprimeMemoria((*VMX).RAM[dirfisica+topB+1],(*VMX).RAM[dirfisica+topB+2],(*VMX).RAM[dirfisica+topB+3]);
                         printf(",");
                         A = armaMemoria((*VMX).RAM[dirfisica+topB+1],(*VMX).RAM[dirfisica+topB+2],(*VMX).RAM[dirfisica+topB+3]);
@@ -247,16 +245,20 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
                             B |= (*VMX).RAM[dirfisica+1];
                             break;
                         case 0x02: //imnediato.
+                            B=0;
                             B = armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]);
                             break;
                         case 0x03: //memoria.
+                            B=0;
                             B = armaMemoria((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2],(*VMX).RAM[dirfisica+3]);
                             break;
                     }
-                    if(topA==0x01){ //registro.                
+                    if(topA==0x01){ //registro.       
+                        A=0;         
                         A = (int)(*VMX).RAM[dirfisica+topB+1];
                     }
                     else{  //memoria.
+                        A=0;
                         A = armaMemoria((*VMX).RAM[dirfisica+topB+1],(*VMX).RAM[dirfisica+topB+2],(*VMX).RAM[dirfisica+topB+3]);
                     }
 

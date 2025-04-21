@@ -53,31 +53,31 @@ void imprimeOrdenDosOp(char orden){
 void imprimeOrdenUnOp(char orden){
     switch(orden){
         case 0x00: //SYS
-            printf("SYS ");
+            printf("\tSYS ");
             break;
         case 0x01: //JMP
-            printf("JMP ");
+            printf("\tJMP ");
             break;
         case 0x02: //JZ
-            printf("JZ ");
+            printf("\tJZ ");
             break;
         case 0x03: //JP
-            printf("JP ");
+            printf("\tJP ");
             break;
         case 0x04: //JN
-            printf("JN ");
+            printf("\tJN ");
             break;
         case 0x05: //JNZ
-            printf("JNZ ");
+            printf("\tJNZ ");
             break;
         case 0x06: //JNP
-            printf("JNP ");
+            printf("\tJNP ");
             break;
         case 0x07: //JNN
-            printf("JNN ");
+            printf("\tJNN ");
             break;
         case 0x08: //NOT
-            printf("NOT ");
+            printf("\tNOT ");
             break;
     }
 }
@@ -109,13 +109,13 @@ void imprimeRegistro(char car){
             printf("%s",devuelveRegistro(aux2));
             break;
         case 0x01:
-            printf("%s",devuelveRegistro2bytes(aux2));
+            printf("%s",devuelveRegistroBajo(aux2));
             break;
         case 0x02:
             printf("%s",devuelveRegistroAlto(aux2));
             break;
         case 0x03:
-            printf("%s",devuelveRegistroBajo(aux2));
+            printf("%s",devuelveRegistro2bytes(aux2));
             break;
     }
 }

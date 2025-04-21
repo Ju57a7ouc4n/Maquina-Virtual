@@ -1,4 +1,5 @@
-//se aplicaran siempre primero las mascaras y luego los corrimientos
+//BAJO DIOS DEL CIELO Y DIJO: 
+//"se aplicaran siempre primero las mascaras y luego los corrimientos precedidos por un casteo"
 
 #define MASC_COD_OPERACION 0x1F //0001 1111
 #define MASC_TIPO_OP_A 0x30     //0011 0000
