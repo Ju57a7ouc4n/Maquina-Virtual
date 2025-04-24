@@ -165,7 +165,7 @@ void RND (int A, int topA, int B, int topB, TVM *vm){
 
 void SYS1 (int dir,int celdas,int tamanio,int formato, TVM *vm){
     int x;
-
+    printf("\n");
     for (int i=0 ; i<celdas ; i++){
         printf("[%04x]: ", dir);
         entrada(&x,formato);

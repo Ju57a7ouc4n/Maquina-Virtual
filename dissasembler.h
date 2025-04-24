@@ -17,3 +17,7 @@ char* devuelveRegistro2bytes(unsigned char car);
 char* devuelveRegistroBajo(unsigned char car);
 
 char* devuelveRegistroAlto(unsigned char car);
+
+int memologitofisica(unsigned short SEG[ENTRADAS][SEGMENTOS],unsigned int);
+
+void llamadissasembler(TVM*);

@@ -2,7 +2,9 @@
   "files.associations": {
     "stdio.h": "c",
     "mv.h": "c",
-    "valores_registros.h": "c"
+    "valores_registros.h": "c",
+    "dissasembler.h": "c",
+    "mascaras.h": "c"
   },
   "C_Cpp_Runner.cCompilerPath": "gcc",
   "C_Cpp_Runner.cppCompilerPath": "g++",
