@@ -4,7 +4,7 @@
 
 //Funcion que modica los bits NZ del registro CC 
 void NZ (int valor, TVM *vm){
-    vm->REG[CC] = 0;
+    vm->REG[CC] &= 0x3FFFFFFF;
     
     if (valor < 0)
         vm->REG[CC] |= MASC_CC_NEGATIVO;
@@ -89,7 +89,8 @@ void DIV (int A, int topA, int B, int topB, TVM *vm){
         int division = valA / valB;
         int resto = valA % valB;
         MOV (A,topA,division,2,vm);
-        MOV(AC,1,resto,2,vm);
+        int opAC = (AC << 4) | (0 << 2);
+        MOV(opAC,1,resto,2,vm);
         NZ(division,vm);
     } else
         vm->error = 2; //Division por cero
