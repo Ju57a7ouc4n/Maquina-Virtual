@@ -60,7 +60,7 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
         break;
         
         case 0x02: //operando inmediato
-            valor=operando;
+            valor= (operando<<16)>>16;
         break;
         
         case 0x03: //operando de memoria
@@ -108,7 +108,6 @@ void entrada(int *x,int formato)
         case 0x02: //caracter.
             scanf("%c",&c); 
             *x = (int)c;
-            while (getchar() != '\n');
             break;
         case 0x04: //octal.
             scanf("%o",x);
@@ -120,13 +119,14 @@ void entrada(int *x,int formato)
             scanf("%s",aux);
             *x = 0;
             while(aux[i]!='\0'){
-                if(aux[i]=='1') 
+                *x <<= 1;
+                if(aux[i] == '1') 
                     *x |= 1;
-                i++; 
-                *x << 1;
+                i++;
             }  
             break; 
     }
+    while (getchar() != '\n');
 }
 
 void salida (int x,int formato,int tamanio){
@@ -155,13 +155,12 @@ void salida (int x,int formato,int tamanio){
         printf("0o%o",x);
     }
     if ((formato & 0x02) == 0x02){ //caracter.
-        for (int i=tamanio ; i>=0 ; i--){
-            int e= x >> 8*i;
-            if(isprint(e))
-                c = x >> 8*i;
+        for (int i = tamanio - 1; i >= 0; i--) {
+            char c = (x >> (i * 8)) & 0xFF;
+            if (isprint(c))
+                putchar(c);
             else
-                c = '.';
-            printf("%c",c);
+                putchar('.');
         }
         printf(" ");
     }

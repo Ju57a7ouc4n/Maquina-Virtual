@@ -8,7 +8,7 @@ OTRO:	MOV EDX, DS; DS almacena un puntero al 1er registro del data segment
 	SYS 1
 
 	CMP [EDX], 0
-	JN SIGUE
+	JZ SIGUE
 	ADD [4], [EDX];
 	ADD EFX, 1
 	JMP OTRO

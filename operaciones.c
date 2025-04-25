@@ -4,7 +4,7 @@
 
 //Funcion que modica los bits NZ del registro CC 
 void NZ (int valor, TVM *vm){
-    vm->REG[CC] &= 0x3FFFFFFF;
+    vm->REG[CC] = 0;
     
     if (valor < 0)
         vm->REG[CC] |= MASC_CC_NEGATIVO;
@@ -38,6 +38,12 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
         // 11: memoria
         case 0x03:
             dir = recupera_direccion_operando(A,vm);
+            
+            if (dir < 0 || dir >= MEMORIA) {  // Fallo de segmento. direccion fuera de memoria
+                vm->error = 3;
+                return;
+            }
+            
             if (modReg == 0) // dependiendo el modificador del registro es la cantidad de celdas a modificar
                 celdas = CANTCELDA;
             else 
@@ -45,8 +51,14 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
                     celdas = 2;
                 else
                     celdas = 1;
+            
+            if (dir + celdas > MEMORIA) { // Fallo de segmento. la direccion que quiero modificar fuera de memoria
+                vm->error = 3;
+                return;
+            }
+
             for (int i = celdas; i>0; i--){
-                vm->RAM[dir++] = valB >> ((i-1)*8);  //se descartan los bits mas significativos
+                vm->RAM[dir++] = valB >> ((i-1)*8); 
             } 
             break;                            
         }
@@ -69,9 +81,10 @@ void SUB (int A, int topA, int B, int topB, TVM *vm){
 }
 
 void SWAP (int A, int topA, int B, int topB, TVM *vm){
-    int aux = recupera_valor_operando(vm,topA,A);
-    MOV(A,topA,B,topB,vm);
-    MOV(B,topB,aux,2,vm); //CHEQUEAR
+    int valA = recupera_valor_operando(vm, topA, A);
+    int valB = recupera_valor_operando(vm, topB, B);
+    MOV(A, topA, valB, 2, vm); 
+    MOV(B, topB, valA, 2, vm); 
 }
 
 void MUL (int A, int topA, int B, int topB, TVM *vm){
@@ -89,7 +102,7 @@ void DIV (int A, int topA, int B, int topB, TVM *vm){
         int division = valA / valB;
         int resto = valA % valB;
         MOV (A,topA,division,2,vm);
-        int opAC = (AC << 4) | (0 << 2);
+        int opAC = (AC << 4) | (0 << 2); // Modificador 0
         MOV(opAC,1,resto,2,vm);
         NZ(division,vm);
     } else
@@ -146,14 +159,14 @@ void XOR (int A, int topA, int B, int topB, TVM *vm){
 void LDL (int A, int topA, int B, int topB, TVM *vm){
     int valB = recupera_valor_operando(vm,topB,B);
     int valA = recupera_valor_operando(vm,topA,A);
-    int carga = (valB & 0xFFFF) | (valA & 0xFFFF);
+    int carga = (valA & 0xFFFF0000) | (valB & 0x0000FFFF);
     MOV(A,topA,carga,2,vm);
 }
 
 void LDH (int A, int topA, int B, int topB, TVM *vm){
     int valB = recupera_valor_operando(vm,topB,B);
     int valA = recupera_valor_operando(vm,topA,A);
-    int carga = (valB & 0xFFFF) | (valA & 0xFFFF0000);
+    int carga = (valA & 0x0000FFFF) | ((valB & 0x0000FFFF) << 16);
     MOV(A,topA,carga,2,vm);
 }
 
@@ -215,19 +228,15 @@ void JMP (int A, int topA, TVM *vm){
 }
 
 void JZ (int A, int topA, TVM *vm){
-    printf("\n %x",vm->REG[CC]);
     if(vm->REG[CC] & MASC_CC_CERO){
         JMP(A,topA,vm);
     }
 }
 
 void JP (int A, int topA, TVM *vm){
-    int valA = recupera_valor_operando(vm,topA,A);
-    jump(vm,valA);
-    if((!vm->error) && (!(vm->REG[CC] & MASC_CC_CERO)) && (!(vm->REG[CC] & MASC_CC_NEGATIVO)))
+    if((!(vm->REG[CC] & MASC_CC_CERO)) && (!(vm->REG[CC] & MASC_CC_NEGATIVO)))
     {
-        vm->REG[IP] &= MASC_BORRA_OFFSET;
-        vm->REG[IP] |= valA;
+        JMP(A,topA,vm);
     }
 }
 
@@ -239,32 +248,23 @@ void JN (int A, int topA, TVM *vm){
 }
 
 void JNZ (int A, int topA, TVM *vm){
-    int valA = recupera_valor_operando(vm,topA,A);
-    jump(vm,valA);
-    if((!vm->error) && (!(vm->REG[CC] & MASC_CC_CERO)))
+    if(!(vm->REG[CC] & MASC_CC_CERO))
     {
-        vm->REG[IP] &= MASC_BORRA_OFFSET;
-        vm->REG[IP] |= valA;
+        JMP(A,topA,vm);
     } 
 }
 
 void JNP (int A, int topA, TVM *vm){
-    int valA = recupera_valor_operando(vm,topA,A);
-    jump(vm,valA);
-    if((!vm->error) && ((vm->REG[CC] & MASC_CC_CERO) || (vm->REG[CC] & MASC_CC_NEGATIVO)))
+    if(((vm->REG[CC] & MASC_CC_CERO) || (vm->REG[CC] & MASC_CC_NEGATIVO)))
     {
-        vm->REG[IP] &= MASC_BORRA_OFFSET;
-        vm->REG[IP] |= valA;
+        JMP(A,topA,vm);
     } 
 }
 
 void JNN (int A, int topA, TVM *vm){
-    int valA = recupera_valor_operando(vm,topA,A);
-    jump(vm,valA);
-    if((!vm->error) && (!(vm->REG[CC] & MASC_CC_NEGATIVO)))
+    if((!(vm->REG[CC] & MASC_CC_NEGATIVO)))
     {
-        vm->REG[IP] &= MASC_BORRA_OFFSET;
-        vm->REG[IP] |= valA;
+        JMP(A,topA,vm);
     } 
 }
 
