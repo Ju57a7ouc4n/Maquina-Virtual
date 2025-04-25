@@ -14,8 +14,9 @@ OTRO:	MOV EDX, DS; DS almacena un puntero al 1er registro del data segment
 	JMP OTRO
 
 SIGUE:	CMP EFX, 0
-	JZ FIN
+	JN FIN
 	DIV [4], EFX
+	JMP FIN
 
 FIN:	MOV EDX, DS
 	ADD EDX, 4

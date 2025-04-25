@@ -120,14 +120,15 @@ int armaInmediato(char car1, char car2){
     return i;
 }
 
-int armaMemoria(char car1, char car2, char car3){
+int armaMemoria(char car1, char car2, char car3){   //Esto esta andando como el culo, me voy a dormir, aguante peron y boquita
+    printf("\n car1= %x  car2= %x  car3= %x \n",car1,car2,car3);
     int i=0;
-    i=(char)car1;
-    i=i<<8;
-    i|=(char)car2;
-    i=i<<8;
-    i|=(char)car3;
-    return i;
+    i= (char)(car1 & 0xFF);
+    i= i<<8;
+    i|= (char)(car2 & 0xFF);
+    i= i<<8;
+    i|= (char)(car3 & 0xFF);
+    return i;                 // resolver diabolic car3 y recuperacion de memoria, viva menem
 }
 
 void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*op2op[])() ){ //Funcion que inicia la ejecucion del programa

@@ -19,6 +19,6 @@
 //mascaras para operandos de memoria
 #define MASC_OFFSET 0x00FFFF00 //extrae el desplazamiento del operando
 #define MASC_SEGMENTO 0xFFFF //para obtener el codigo de segmento 
-#define MASC_CC_NEGATIVO 0X80000000 //modifica registro CC si el ultimo resultado fue negativo
-#define MASC_CC_CERO 0X40000000 //modifica registro CC si el ultimo resultado fue cero
+#define MASC_CC_NEGATIVO 0x80000000 //modifica registro CC si el ultimo resultado fue negativo
+#define MASC_CC_CERO 0x40000000 //modifica registro CC si el ultimo resultado fue cero
 #define MASC_BORRA_OFFSET 0xFFFF0000

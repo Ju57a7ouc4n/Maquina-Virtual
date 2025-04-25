@@ -77,6 +77,7 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
             for (int i = celdas ; i > 0 ; i--) {
                 valor |= vm->RAM[direccion++] << 8*i; 
             }
+            printf("\n valor recuperado= %d",valor);
         break;
     }
 
@@ -86,7 +87,7 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
 int jump_valido (TVM vm, int salto){
     int inicioCS = vm.SEG[0][0];
     int finCS = vm.SEG[0][1] + inicioCS;
-    return (salto < finCS) && (salto >= inicioCS);
+    return (salto < finCS) && (salto > inicioCS);
 }
 
 void jump (TVM *vm,int salto){
