@@ -117,18 +117,24 @@ int armaInmediato(char car1, char car2){
     i=(char)car1;
     i=i<<8;
     i|=(char)car2;
+    i = (i<<16)>>16;  // expande signo si es negativo
     return i;
 }
 
-int armaMemoria(char car1, char car2, char car3){   //Esto esta andando como el culo, me voy a dormir, aguante peron y boquita
-    printf("\n car1= %x  car2= %x  car3= %x \n",car1,car2,car3);
-    int i=0;
-    i= (char)(car1 & 0xFF);
-    i= i<<8;
-    i|= (char)(car2 & 0xFF);
-    i= i<<8;
-    i|= (char)(car3 & 0xFF);
-    return i;                 // resolver diabolic car3 y recuperacion de memoria, viva menem
+int arma_Memoria(TVM VMX,int dir){
+    int x=0;
+    for (int i=0 ; i<3 ; i++) {
+        x =  (x << 8) | (VMX.RAM[dir+i] & 0xFF);
+    }
+    return x;
+}
+
+int armaMemoria(char car1, char car2, char car3){  
+    unsigned int i = 0;
+    i |= ((unsigned char)car1) << 16;
+    i |= ((unsigned char)car2) << 8;
+    i |= ((unsigned char)car3);
+    return i;
 }
 
 void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*op2op[])() ){ //Funcion que inicia la ejecucion del programa
@@ -141,7 +147,7 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
     while((*VMX).RAM[dirfisica]!=0x0F && (*VMX).error==0){ //Mientras no sea un stop y no hay error
         orden=((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar   
-        if(!(orden>=0x00 && orden<0x08) && !(orden>=0x10 && orden<=0x1E)){ ///PREGUNTAR SI LA ORDEN ES INVALIDA: cuando el codigo de operacion de la instruccion a ejecutar no existe 
+        if(!(orden>=0x00 && orden<=0x08) && !(orden>=0x10 && orden<=0x1E)){ ///PREGUNTAR SI LA ORDEN ES INVALIDA: cuando el codigo de operacion de la instruccion a ejecutar no existe 
             (*VMX).error= 1;
         }
         else{      

@@ -74,10 +74,10 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
                 else
                     celdas = 1;
             direccion=recupera_direccion_operando(operando,vm);
-            for (int i = celdas ; i > 0 ; i--) {
-                valor |= vm->RAM[direccion++] << 8*i; 
+            for (int i = 0; i < celdas; i++) {
+                valor <<= 8;
+                valor |= (vm->RAM[direccion + i] & 0xFF);
             }
-            printf("\n valor recuperado= %d",valor);
         break;
     }
 

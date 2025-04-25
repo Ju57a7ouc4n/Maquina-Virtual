@@ -12,8 +12,6 @@ void NZ (int valor, TVM *vm){
     if (valor == 0)
         vm->REG[CC] |= MASC_CC_CERO;
 
-    printf("\n valor de CC=%x",vm->REG[CC]);
-
 }
 
 //FUNCIONES DE DOS PARAMETROS 
@@ -101,7 +99,6 @@ void CMP (int A, int topA, int B, int topB, TVM *vm){
     int valB = recupera_valor_operando(vm,topB,B); 
     int valA = recupera_valor_operando(vm,topA,A);
     int resta = valA - valB;
-    printf("\n A= %d \t valor de A= %d \t tipo de operando= %d \n",A,valA,topA);
     NZ(resta,vm);
 }
 
