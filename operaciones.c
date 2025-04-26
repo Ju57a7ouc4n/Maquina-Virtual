@@ -27,7 +27,7 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
 
         // 01: registro
         case 0x01:
-            masc = mascara(modReg);
+            masc = mascara(modReg);    // 0100 1011  =>  operacion= 0B topB=reg topA=0
             if (modReg == 0x02)
                 corr = 1;
             posReg = (unsigned int)(A & MASC_CODIGO) >> 4; // 00000000 00000000 00000000 11110000
@@ -51,7 +51,8 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
                     celdas = 2;
                 else
                     celdas = 1;
-            
+            celdas = 4;
+
             if (dir + celdas > MEMORIA) { // Fallo de segmento. la direccion que quiero modificar fuera de memoria
                 vm->error = 3;
                 return;
@@ -64,7 +65,7 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
         }
 }
 
-void ADD (int A, int topA, int B, int topB, TVM *vm){
+void ADD (int A, int topA, int B, int topB, TVM *vm){ 
     int valB = recupera_valor_operando(vm,topB,B); 
     int valA = recupera_valor_operando(vm,topA,A);
     int suma = valB + valA;
@@ -75,7 +76,7 @@ void ADD (int A, int topA, int B, int topB, TVM *vm){
 void SUB (int A, int topA, int B, int topB, TVM *vm){
     int valB = recupera_valor_operando(vm,topB,B); 
     int valA = recupera_valor_operando(vm,topA,A);
-    int resta = valB - valA;
+    int resta = valA - valB;
     MOV(A,topA,resta,2,vm);
     NZ(resta,vm);
 }
@@ -185,7 +186,6 @@ void SYS1 (int dir,int celdas,int tamanio,int formato, TVM *vm){
         entrada(&x,formato);
         for (int k=tamanio-1 ; k>=0 ; k--){
             vm->RAM[dir++] = (x & (0xFF<<8*k)) >> (8*k);
-            printf("%d   ",(x & (0xFF<<8*k)) >> (8*k));
         }
     }
 }
@@ -194,7 +194,7 @@ void SYS2 (int dir,int celdas,int tamanio,int formato, TVM *vm){
     int x;
     for(int i=0 ; i<celdas ; i++){
         x = 0;
-        printf("[%04x]: ",dir);
+        printf("[%04X]: ",dir);
         for(int k=tamanio-1 ; k>=0 ; k--){
             x |= (vm->RAM[dir++] << (8*k)) & (0xFF << (8*k));
         }

@@ -94,10 +94,9 @@ void imprimeOrdenCeroOp(char orden){
 
 void imprimeInmediato(char car1, char car2){
     int i=0;
-    i=(char)car1;
-    i=i<<8;
-    i|=(char)car2;
-    printf("%x",i);
+    i=(unsigned char)car1 << 8;
+    i|=(unsigned char)car2;
+    printf("%X",i);
 }
 
 void imprimeMemoria(char car1, char car2, char car3){
@@ -245,7 +244,7 @@ void llamadissasembler(TVM *VMX){
     int A,B;
     int indiceCS = (unsigned int)(*VMX).REG[CS]>>16;
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]); 
-    while((*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no sea un stop y no hay error
+    while((*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no hay error y no termine CS
             orden=(char)((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar          
             topB=(((*VMX).RAM[dirfisica] & MASC_TIPO_OP_B) >> 6);
             topA=((*VMX).RAM[dirfisica] & MASC_TIPO_OP_A) >> 4;

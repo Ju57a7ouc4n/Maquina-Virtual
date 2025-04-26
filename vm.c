@@ -114,9 +114,8 @@ void cargaCS(TVM *VMX,char *nombreArchivo,int *compatible){ //Carga el segmento 
 
 int armaInmediato(char car1, char car2){
     int i=0;
-    i=(char)car1;
-    i=i<<8;
-    i|=(char)car2;
+    i = (char)car1 << 8;
+    i|= (unsigned char)car2;
     i = (i<<16)>>16;  // expande signo si es negativo
     return i;
 }
@@ -140,12 +139,13 @@ int armaMemoria(char car1, char car2, char car3){
 void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*op2op[])() ){ //Funcion que inicia la ejecucion del programa
     int dirfisica,dirfisicaTCS,topA,topB,A,B,assemb=0;
     char orden;
+    int indiceCS = (unsigned int)(*VMX).REG[CS]>>16;
     if(argc==3 && strcmp(argv[2],"-d")==0){
         llamadissasembler(VMX); //Desensambla el programa
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
     printf("Iniciando la ejecucion del programa...\n");
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
-    while((*VMX).RAM[dirfisica]!=0x0F && (*VMX).error==0){ //Mientras no sea un stop y no hay error
+    while((*VMX).RAM[dirfisica]!=0x0F && (*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no sea un stop y no hay error
         orden=((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar   
         if(!(orden>=0x00 && orden<=0x08) && !(orden>=0x10 && orden<=0x1E)){ ///PREGUNTAR SI LA ORDEN ES INVALIDA: cuando el codigo de operacion de la instruccion a ejecutar no existe 
             (*VMX).error= 1;
@@ -196,6 +196,9 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
         dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
         }
     }
+    if ( dirfisica == ((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1]))
+        (*VMX).error = 3;
+    
     switch ((*VMX).error){
         case 0: printf("Fin de la Ejecucion del programa...\n");
                 break;
@@ -203,7 +206,7 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
                 break;
         case 2: printf("Error: Division por cero \n");
                 break;
-        case 3: printf("Error: Segmento no valido \n");
+        case 3: printf("Error: Fallo de segmento \n");
                 break;
     }
     }
