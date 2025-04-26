@@ -3,12 +3,6 @@
 #include "valores_registros.h"
 #include <stdio.h>
 
-//t: tipo operando .
-//: tipo operando .
-//  es la direccion fisica del dato
-//  depende de 
-
-
 void MOV (int , int, int , int, TVM*);
 
 void ADD (int , int, int , int, TVM*);
