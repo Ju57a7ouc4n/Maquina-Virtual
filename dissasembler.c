@@ -105,13 +105,13 @@ void imprimeMemoria(char car1, char car2, char car3){
     i=(char)car1;
     i=i<<8;
     i|=(char)car2;
-    aux=((unsigned char)car3>>4); // 1111 0000 >> 0000 1111
+    aux=((unsigned char)car3>>4);
     printf("[%s+%x]",devuelveRegistro(aux),i);
 }
 
 void imprimeRegistro(char car){
     unsigned char aux1,aux2;
-    aux1=(unsigned char)(car & 0x0C)>>2; // 0000 1100 >> 0000 0011
+    aux1=(unsigned char)(car & 0x0C)>>2; 
     aux2=((unsigned char)car>>4);
     switch(aux1){
         case 0x00:
@@ -240,11 +240,11 @@ void imprime_tab (int x){
 }
 
 void llamadissasembler(TVM *VMX){
-    int dirfisica=0,topA=0,topB=0,orden=0,assemb=0; // REG[CS] = 00 0x 00 00    REG[DS] = 00 0a 00 00   REG[IP] = 00 0x XX XX
+    int dirfisica=0,topA=0,topB=0,orden=0,assemb=0; 
     int A,B;
     int indiceCS = (unsigned int)(*VMX).REG[CS]>>16;
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]); 
-    while((*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no hay error y no termine CS
+    while((*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no hay error y dentro de CS
             orden=(char)((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar          
             topB=(((*VMX).RAM[dirfisica] & MASC_TIPO_OP_B) >> 6);
             topA=((*VMX).RAM[dirfisica] & MASC_TIPO_OP_A) >> 4;

@@ -2,10 +2,7 @@
 #include <string.h>
 #include "MV.h"
 #include "mascaras.h"
-#include <ctype.h>
-
-//  codReg: IP, EAX EBX
-// inicioSeg:  
+#include <ctype.h> 
 
 int recupera_direccion_registro(int contenido_registro,TVM *vm){
     int inicioSeg = (unsigned int)(contenido_registro & 0xFFFF0000) >> 16;
@@ -13,7 +10,7 @@ int recupera_direccion_registro(int contenido_registro,TVM *vm){
     return ((*vm).SEG[inicioSeg][0] + offsetReg);
 }
 
-int recupera_direccion_operando(int operando,TVM *vm){ // 00000000 00000000 00000000 00000000
+int recupera_direccion_operando(int operando,TVM *vm){
     int offset = (unsigned int)(operando & MASC_OFFSET) >> 8 ;
     int cod = (unsigned int)(operando & 0x000000F0 )>> 4;
     return  (recupera_direccion_registro((*vm).REG[cod],vm) + offset);

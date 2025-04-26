@@ -1,6 +1,7 @@
 #include "valores_registros.h"
 #include "mascaras.h"
 #include "operaciones.h"
+#include "dissasembler.h"
 #include <stdio.h>
 #include <string.h>
 #include <string.h>
@@ -18,15 +19,13 @@ int verificacabecera(char[]);
 
 int armaInmediato(char car1, char car2);
 
-#include "dissasembler.h" //Perdon Sandra
-
 int armaMemoria(char car1, char car2, char car3);
 
 void cargaCS(TVM*,char*,int*);   
 
 void iniciaEjecucion(TVM*, char **, int, void(*op1op[])(), void(*op2op[])());
 
-int main(int argc, char *argv[]){      //2 operandos:  xxx1 0101
+int main(int argc, char *argv[]){ 
     TVM VMX;
     VMX.error=0;
     int compatible=1,k,i,j=0;
@@ -60,9 +59,9 @@ int verificacabecera(char vec[5]){ //Funcion que verifica la cabecera del archiv
 }
 
 void iniciaRegistros(TVM *VMX,int posCS,int posDS){
-    (*VMX).REG[CS] = posCS << 16; // 00000000 00000000 00000000 00000001 = (*VMX).SEG[0][0] << 16
-    (*VMX).REG[IP] = (*VMX).REG[CS];  // SEG[0][1]
-    (*VMX).REG[DS] = posDS << 16;        //  REG[DS] = 00000000 00000001 00000000 00000000
+    (*VMX).REG[CS] = posCS << 16; 
+    (*VMX).REG[IP] = (*VMX).REG[CS];
+    (*VMX).REG[DS] = posDS << 16;   
 }
 
 void armaTabla(TVM *VMX, int tamanioCS,int posCS,int posDS){ //Arma la tabla de segmentos
@@ -145,7 +144,7 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
     printf("Iniciando la ejecucion del programa...\n");
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
-    while((*VMX).RAM[dirfisica]!=0x0F && (*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no sea un stop y no hay error
+    while((*VMX).RAM[dirfisica]!=0x0F && (*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no sea un stop, no hay error y esta dentro del CS
         orden=((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar   
         if(!(orden>=0x00 && orden<=0x08) && !(orden>=0x10 && orden<=0x1E)){ ///PREGUNTAR SI LA ORDEN ES INVALIDA: cuando el codigo de operacion de la instruccion a ejecutar no existe 
             (*VMX).error= 1;

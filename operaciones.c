@@ -22,15 +22,15 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
     int dir,celdas; // variables para memoria
     int modReg=0; // comun para memoria o registro
     valB=recupera_valor_operando(vm,topB,B);
-    modReg = (A & 0x0000000C) >> 2; //00000000 00000000 00000000 00001100
+    modReg = (A & 0x0000000C) >> 2; 
     switch(topA){
 
         // 01: registro
         case 0x01:
-            masc = mascara(modReg);    // 0100 1011  =>  operacion= 0B topB=reg topA=0
+            masc = mascara(modReg);
             if (modReg == 0x02)
                 corr = 1;
-            posReg = (unsigned int)(A & MASC_CODIGO) >> 4; // 00000000 00000000 00000000 11110000
+            posReg = (unsigned int)(A & MASC_CODIGO) >> 4; 
             valB =(unsigned int) valB << (corr*8);
             (*vm).REG[posReg] = ((*vm).REG[posReg] & (~masc)) | (valB & masc);
         break;  
@@ -202,7 +202,7 @@ void SYS2 (int dir,int celdas,int tamanio,int formato, TVM *vm){
     }
 }
 
-void SYS (int operando,int topA, TVM *vm){ // TODOS los operandos de entrada son inmediatos??
+void SYS (int operando,int topA, TVM *vm){
     int dirMem = (((*vm).SEG[1][0])) + ((*vm).REG[EDX]&0x0000FFFF);
     //int dirMem = recupera_direccion_registro((*vm).REG[EDX],vm);
     int celdas = (unsigned int)(*vm).REG[ECX] & MASC_RL;
