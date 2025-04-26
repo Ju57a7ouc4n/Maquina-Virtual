@@ -119,14 +119,6 @@ int armaInmediato(char car1, char car2){
     return i;
 }
 
-int arma_Memoria(TVM VMX,int dir){
-    int x=0;
-    for (int i=0 ; i<3 ; i++) {
-        x =  (x << 8) | (VMX.RAM[dir+i] & 0xFF);
-    }
-    return x;
-}
-
 int armaMemoria(char car1, char car2, char car3){  
     unsigned int i = 0;
     i |= ((unsigned char)car1) << 16;
