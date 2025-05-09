@@ -31,7 +31,7 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
             if (modReg == 0x02)
                 corr = 1;
             posReg = (unsigned int)(A & MASC_CODIGO) >> 4; 
-            valB =(unsigned int) valB << (corr*8);
+            valB = (unsigned int) valB << (corr*8);
             (*vm).REG[posReg] = ((*vm).REG[posReg] & (~masc)) | (valB & masc);
         break;  
         
@@ -44,15 +44,15 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
                 return;
             }
             
-            if (modReg == 0) // dependiendo el modificador del registro es la cantidad de celdas a modificar
-                celdas = CANTCELDA;
-            else 
-                if (modReg == 3)
-                    celdas = 2;
-                else
-                    celdas = 1;
-            celdas = 4;
+            //if (modReg == 0) // dependiendo el modificador del registro es la cantidad de celdas a modificar
+            //    celdas = CANTCELDA;
+            //else 
+            //    if (modReg == 3)
+            //        celdas = 2;
+            //    else
+            //        celdas = 1;
 
+            celdas = CANTCELDA;
             if (dir + celdas > MEMORIA) { // Fallo de segmento. la direccion que quiero modificar fuera de memoria
                 vm->error = 3;
                 return;

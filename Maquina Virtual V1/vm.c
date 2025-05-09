@@ -187,8 +187,6 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
         dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
         }
     }
-    if ( dirfisica == ((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1]))
-        (*VMX).error = 3;
     
     switch ((*VMX).error){
         case 0: printf("Fin de la Ejecucion del programa...\n");
