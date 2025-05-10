@@ -2,6 +2,7 @@
 #include "dissasembler.h"
 #include "mascaras.h"
 #include "valores_registros.h"
+#include "segmentos.h"
 
 void imprimeOrdenDosOp(char orden){
     switch(orden){
@@ -240,11 +241,11 @@ void imprime_tab (int x){
 }
 
 void llamadissasembler(TVM *VMX){
-    int dirfisica=0,topA=0,topB=0,orden=0,assemb=0; 
+    int dirfisica=0,topA=0,topB=0,orden=0,assemb=0,flag=0; 
     int A,B;
     int indiceCS = (unsigned int)(*VMX).REG[CS]>>16;
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]); 
-    while((*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no hay error y dentro de CS
+    while(flag==0 &&(*VMX).error==0 && dirfisica<((*VMX).SEG[codCS][0] + (*VMX).SEG[codCS][1])){ //Mientras no hay error y dentro de CS
             orden=(char)((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar          
             topB=(((*VMX).RAM[dirfisica] & MASC_TIPO_OP_B) >> 6);
             topA=((*VMX).RAM[dirfisica] & MASC_TIPO_OP_A) >> 4;
@@ -338,6 +339,7 @@ void llamadissasembler(TVM *VMX){
                     printf("%02X ",(*VMX).RAM[dirfisica]);
                     imprime_tab(0);
                     imprimeOrdenCeroOp((*VMX).RAM[dirfisica]);
+                    flag=1;
                     printf("\n");
                 }
             }

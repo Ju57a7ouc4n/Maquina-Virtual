@@ -52,8 +52,12 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
             mascara_de_registro = mascara(mod);
             valor = (*vm).REG[cod];
             valor = valor & mascara_de_registro;
+            if (mod == 3)
+                valor = (valor << 16) >> 16;
             if (mod == 2)
-                valor = (unsigned int)valor >> 8;
+                valor = valor >> 8;
+            if (mod == 1 || mod ==2)
+                valor = (valor << 24) >> 24;
         break;
         
         case 0x02: //operando inmediato
@@ -63,13 +67,15 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
         case 0x03: //operando de memoria
             valor = 0;
             mod = (unsigned int)(operando & MASC_MODIFICADOR) >> 2 ;
-            if (mod == 0) 
-                celdas = CANTCELDA;
-            else 
-                if (mod == 3)
-                    celdas = 2;
-                else
-                    celdas = 1;
+            //if (mod == 0) 
+            //    celdas = CANTCELDA;
+            //else 
+            //    if (mod == 3)
+            //        celdas = 2;
+            //    else
+            //        celdas = 1;
+            celdas = CANTCELDA;
+
             direccion=recupera_direccion_operando(operando,vm);
             for (int i = 0; i < celdas; i++) {
                 valor <<= 8;

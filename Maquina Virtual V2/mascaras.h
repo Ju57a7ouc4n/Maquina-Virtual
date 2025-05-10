@@ -22,3 +22,9 @@
 #define MASC_CC_NEGATIVO 0x80000000 //modifica registro CC si el ultimo resultado fue negativo
 #define MASC_CC_CERO 0x40000000 //modifica registro CC si el ultimo resultado fue cero
 #define MASC_BORRA_OFFSET 0xFFFF0000
+
+//mascaras para parametros
+#define MASC_BYTE1 0xFF000000
+#define MASC_BYTE2 0x00FF0000
+#define MASC_BYTE3 0x0000FF00
+#define MASC_BYTE4 0x000000FF
