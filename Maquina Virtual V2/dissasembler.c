@@ -239,13 +239,15 @@ void imprime_tab (int x){
     }
     printf("| ");
 }
+        //HOLA, estoy cenando, termino y me meto al ds :) si bebe  q ricoooooo
 
+        //Dale tranqui, yo tambien ceno en un toque
 void llamadissasembler(TVM *VMX){
     int dirfisica=0,topA=0,topB=0,orden=0,assemb=0,flag=0; 
     int A,B;
     int indiceCS = (unsigned int)(*VMX).REG[CS]>>16;
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]); 
-    while(flag==0 &&(*VMX).error==0 && dirfisica<((*VMX).SEG[codCS][0] + (*VMX).SEG[codCS][1])){ //Mientras no hay error y dentro de CS
+    while((*VMX).error==0){ //Mientras no hay error y dentro de CS
             orden=(char)((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar          
             topB=(((*VMX).RAM[dirfisica] & MASC_TIPO_OP_B) >> 6);
             topA=((*VMX).RAM[dirfisica] & MASC_TIPO_OP_A) >> 4;
