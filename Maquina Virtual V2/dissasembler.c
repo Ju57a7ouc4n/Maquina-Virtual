@@ -2,7 +2,6 @@
 #include "dissasembler.h"
 #include "mascaras.h"
 #include "valores_registros.h"
-#include "segmentos.h"
 
 void imprimeOrdenDosOp(char orden){
     switch(orden){
@@ -107,7 +106,20 @@ void imprimeMemoria(char car1, char car2, char car3){
     i=i<<8;
     i|=(char)car2;
     aux=((unsigned char)car3>>4);
-    printf("[%s+%x]",devuelveRegistro(aux),i);
+    if(car3&0x0F==0 ||car3&0x0F==0x01){
+        printf("l");
+        printf("[%s+%x]",devuelveRegistro(aux),i);
+    }
+    else{
+        if(car3&0x0F==0x02){
+        printf("w");
+        printf("[%s+%x]",devuelveRegistro(aux),i);
+        }
+        else{ //0x03
+            printf("b");
+            printf("[%s+%x]",devuelveRegistro(aux),i);
+        }
+    }
 }
 
 void imprimeRegistro(char car){
@@ -239,15 +251,12 @@ void imprime_tab (int x){
     }
     printf("| ");
 }
-        //HOLA, estoy cenando, termino y me meto al ds :) si bebe  q ricoooooo
-
-        //Dale tranqui, yo tambien ceno en un toque
 void llamadissasembler(TVM *VMX){
     int dirfisica=0,topA=0,topB=0,orden=0,assemb=0,flag=0; 
     int A,B;
     int indiceCS = (unsigned int)(*VMX).REG[CS]>>16;
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]); 
-    while((*VMX).error==0){ //Mientras no hay error y dentro de CS
+    while((*VMX).error==0 && orden!=0x0F && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no hay error y dentro de CS
             orden=(char)((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar          
             topB=(((*VMX).RAM[dirfisica] & MASC_TIPO_OP_B) >> 6);
             topA=((*VMX).RAM[dirfisica] & MASC_TIPO_OP_A) >> 4;

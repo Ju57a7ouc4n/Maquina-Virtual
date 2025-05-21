@@ -3,3 +3,5 @@
 #define E_DIVISION_0 2
 #define E_FALLO_SEG 3
 #define E_MEM_INSUFICIENTE 4
+#define E_STACK_OVERFLOW 5
+#define E_STACK_UNDERFLOW 6

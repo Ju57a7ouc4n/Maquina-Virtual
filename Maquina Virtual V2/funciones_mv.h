@@ -18,3 +18,5 @@ void jump(TVM *vm, int salto);
 void entrada(int *x, int formato);
 
 void salida(int x, int formato, int tamanio);
+
+void generaVMI(TVM,size_t,char*);

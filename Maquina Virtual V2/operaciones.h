@@ -50,3 +50,11 @@ void JNP (int , int, TVM*);
 void JNN (int , int, TVM*);
 
 void NOT (int , int, TVM*);
+
+void PUSH (int, int, TVM*);
+
+void POP (int, int, TVM*);
+
+void CALL (int, int, TVM*);
+
+void RET (int, int, TVM*);

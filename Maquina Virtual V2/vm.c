@@ -10,7 +10,7 @@
 #define OP2 15
 #define NULO -1
 
-int memologitofisica(unsigned short **,unsigned int);
+int memologitofisica(short int tabla[SECCIONES][ENTRADAS], unsigned int dirlogica);
 
 int verificacabecera(char[]);
 
@@ -54,7 +54,6 @@ int main(int argc, char *argv[]){
     }
     (compatible)?iniciaEjecucion(&VMX,argv,argc,op1op,op2op):printf("El archivo no es compatible. \n"); //Inicia la ejecucion del programa
     free(VMX.RAM); //Libera la memoria RAM
-    free(VMX.SEG);
 }
 
 int detectaArch(char *argv[]){ //Funcion que detecta si el archivo es un .vmx, un .vmi o ambos
@@ -77,7 +76,7 @@ int detectaArch(char *argv[]){ //Funcion que detecta si el archivo es un .vmx, u
 void cargaVMI(TVM *VMX,char *nombreArchivo,int *compatible,size_t *tamanioRAM){
     FILE *fichero;
     short unsigned int m=0;
-    int aux=0,dirfisica,alta,baja;
+    int aux=0,dirfisica,base,offset;
     unsigned char lector;
     char vec[6];
     fichero=fopen(nombreArchivo,"rb");
@@ -92,7 +91,7 @@ void cargaVMI(TVM *VMX,char *nombreArchivo,int *compatible,size_t *tamanioRAM){
             aux=aux<<8;
             fread(&lector,sizeof(unsigned char),1,fichero);
             aux|=lector;
-            *tamanioRAM=aux;
+            *tamanioRAM=aux*1024;
             VMX->RAM = (unsigned char*)malloc(*tamanioRAM * sizeof(unsigned char));
             for(int j=0;j<16;j++){ //Este ciclo arma los registros
                 fread(&lector,sizeof(unsigned char),1,fichero);
@@ -106,27 +105,22 @@ void cargaVMI(TVM *VMX,char *nombreArchivo,int *compatible,size_t *tamanioRAM){
             }
             for(int k=0;k<8;k++){ //Este ciclo arma la bendita tabla de segmentos
                 fread(&lector,sizeof(unsigned char),1,fichero);
-                alta|lector<<8;
+                base|lector<<8;
                 fread(&lector,sizeof(unsigned char),1,fichero);
-                alta|lector;
+                base|lector;
                 fread(&lector,sizeof(unsigned char),1,fichero);
-                baja|lector<<8;
+                offset|lector<<8;
                 fread(&lector,sizeof(unsigned char),1,fichero);
-                baja|lector;
-            /*
-            
-            
-            ACA VA EL ARMADO DE LA TABLA DE SEGMENTOS
-            
-            
-            */
+                offset|lector;
+                (*VMX).SEG[k][0]=base;
+                (*VMX).SEG[k][1]=offset;
             }
             m=0;
-            dirfisica=memologitofisica(VMX->SEG,(*VMX).REG[CS]);
+            dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[CS]);
             while(fread(&lector,sizeof(unsigned char),1,fichero)==1){
                 (*VMX).RAM[dirfisica]=lector;
                 m+=1;
-                dirfisica=memologitofisica(VMX->SEG,(VMX->REG[CS] + m));
+                dirfisica=memologitofisica((*VMX).SEG, m);
             }
             *compatible=1;
         }
@@ -161,16 +155,15 @@ void iniciaRAM(int argc, char *argv[], TVM *VMX,size_t *tamanioRAM){ //Inicia la
         }
         i++;
     }
-    VMX->RAM = (unsigned char*)malloc(*tamanioRAM * sizeof(unsigned char));
+    (*VMX).RAM = (unsigned char*)malloc((*tamanioRAM) * sizeof(unsigned char));
 }
 
 void cargaPS(TVM *VMX,char *argv[],int argc,int *TPS){ //Carga el segmento de datos en la memoria
-    int i=0,vp[100],cantp=0,k=0,sig=0;
-    while(i<argc && argv[i]!="-p")
+    int i=0,vp[100],cantp=-1,k=0,sig=0;
+    while(i < argc && strcmp(argv[i], "-p") != 0)
         i++;
-    if(argv[i]=="-p"){
-        while(i<argc){
-            i++;
+    if(i < argc && strcmp(argv[i], "-p") == 0){
+        while(++i < argc){  
             cargaParametro(VMX,argv[i],vp,&cantp,&sig); //cantp: cantidad de punteros
         }
         while(k<cantp){ //sig: proxima posicion en la memoria donde se escribe el puntero del parametro K
@@ -188,15 +181,18 @@ void cargaPS(TVM *VMX,char *argv[],int argc,int *TPS){ //Carga el segmento de da
 void cargaParametro(TVM *VMX, char *argv, int *vp, int *cantp, int *sig){
     int tamanio= strlen(argv);
     int i=0;
-    vp[*cantp]=(*sig); //Se guarda la posicion del puntero
     (*cantp)++;
+    vp[*cantp]=(*sig); //Se guarda la posicion del puntero
     while(i<tamanio){
-        (*VMX).RAM[(*sig)]=argv[i];
+        (*VMX).RAM[(*sig)] = (unsigned char)argv[i];
         (*sig)++;
+        i++;
     }
+    (*VMX).RAM[(*sig)] = 0x00;
+    (*sig)++;
 }
 
-int memologitofisica(unsigned short **tabla, unsigned int dirlogica){ //Funcion que convierte una direccion logica a fisica
+int memologitofisica(short int tabla[SECCIONES][ENTRADAS], unsigned int dirlogica){ //Funcion que convierte una direccion logica a fisica
     unsigned int IPH=0, offset=0;
     offset|=(dirlogica & 0x0000FFFF); //Se obtiene el offset
     IPH=(unsigned int)((dirlogica  & 0xFFFF0000) >> 16); //Se obtiene la base 
@@ -219,7 +215,7 @@ int verificacabecera(char vec[5]){ //Funcion que verifica la cabecera del archiv
 
 void iniciaRegistros(TVM *VMX, int TSS, int EP){
     (*VMX).REG[SP]=(*VMX).REG[SS] + TSS;
-    (*VMX).REG[IP]=(*VMX).REG[CS] + EP;  // 00000000 00000000 00000000 00000000 
+    (*VMX).REG[IP]=(*VMX).REG[CS] + EP; 
 } 
 
 
@@ -227,7 +223,7 @@ int sufMemo(int VecTamSeg[],size_t tamanioRAM){ //Funcion que verifica si hay su
     int memAcum=0;
     for(int i=0;i<SEGMENTOS;i++)
         memAcum+=VecTamSeg[i];
-    return (memAcum<tamanioRAM);   
+    return (memAcum<tamanioRAM);
 }
 
 int CuentaSegmentos(int VecTamSeg[]){
@@ -238,48 +234,51 @@ int CuentaSegmentos(int VecTamSeg[]){
 }
 void AjustaVecTam(int VecTamSegmentos[],int TPS){
     int TKS=VecTamSegmentos[4];
-    for(int i=0;i<4;i++)
-        VecTamSegmentos[i+2]=VecTamSegmentos[i];
+    for(int i=3;i>=0;i--)
+        VecTamSegmentos[i+2]=VecTamSegmentos[i]; // [0 0 47 16337 0 0 ]
     VecTamSegmentos[0]=TPS;
     VecTamSegmentos[1]=TKS;
 }
 
-void armaTabla(TVM *VMX, int VecTamSegmentos[],int EP,size_t tamanioRAM){ //Arma la tabla de segmentos{
-    int i,cantSegmentosExistentes,segActual,indiceREG,memAcum; 
-    
-    if(sufMemo(VecTamSegmentos,tamanioRAM)){ //Verifica si hay suficiente memoria
-        //definir matriz de 2x cantidad de segmentos existentes
-        cantSegmentosExistentes=CuentaSegmentos(VecTamSegmentos); 
-        //reserva memoria para las filas (punteros a filas)
-        (*VMX).SEG = malloc(cantSegmentosExistentes * sizeof(short int *));
-        for (i=0 ; i < cantSegmentosExistentes ; i++) {
-            (*VMX).SEG[i] = malloc(2 * sizeof(short int));
-        }
+void armaTabla(TVM *VMX, int VecTamSeg[],int EP,size_t tamanioRAM){ //Arma la tabla de segmentos{
+    int fila,cantSegmentosExistentes,segActual,indiceREG,memAcum; 
+
+    //VecTamSegmentos = {TPS,TKS,TCS,TDS,TEX,TSS} siendo T el tamanio de cada segmento
+
+    if(sufMemo(VecTamSeg,tamanioRAM)){ //Verifica si hay suficiente memoria
         segActual=0;
         memAcum=0;
-        for (i=0 ; i < SEGMENTOS ; i++)
-            
-            if (i==1)
+        fila=0;
+        
+        for(int i=0;i<SECCIONES;i++) //Inicializa la tabla de segmentos
+            for(int j=0;j<ENTRADAS;j++)
+                (*VMX).SEG[i][j]=0;
+       
+        for (segActual=0 ; segActual < SEGMENTOS ; segActual++){
+    
+            if (segActual==1) //Se obtiene el codigo de registro correspondiente segun su posicion en el vector de tamanios
                 indiceREG=4; 
             else
-                indiceREG=i-2;
+                indiceREG=segActual-2;
                                                   
-            if (VecTamSegmentos[i]!=0){                     
-                (*VMX).SEG[segActual][0]=memAcum;
-                (*VMX).SEG[segActual][1]=VecTamSegmentos[i];
-                memAcum += VecTamSegmentos[i];
-                if(i!=0)
-                    (*VMX).REG[indiceREG] = segActual << 16; //ya q si es el param segment --> no se inicializa el reg
-                segActual++;
+            if (VecTamSeg[segActual]!=0){                     
+                (*VMX).SEG[fila][0]=memAcum;
+                (*VMX).SEG[fila][1]=VecTamSeg[segActual];
+                memAcum += VecTamSeg[segActual];
+                if(segActual!=0) //ya que el param segment no tiene registro para inicializar
+                    (*VMX).REG[indiceREG] = (unsigned int)fila << 16; //se indica la entrada a la tabla de segmentos para cada registro de segmento
+                fila++;
             }
             else {
-                if (i!=0)
+                if (segActual!=0) //misma razon que antes
                     (*VMX).REG[indiceREG] = NULO;
             }
             
-         iniciaRegistros(VMX,VecTamSegmentos[5],EP); //Inicia los registros
-    }    
-    else
+         iniciaRegistros(VMX,VecTamSeg[5],EP); //Inicia los registros IP y SP. Para ello se envia el tamanio del stack segment y el entry point
+        
+        }    
+    }
+        else
         (*VMX).error=4; //Error: No hay suficiente memoria
 }
 
@@ -287,8 +286,8 @@ void armaTabla(TVM *VMX, int VecTamSegmentos[],int EP,size_t tamanioRAM){ //Arma
 void cargaCS(TVM *VMX,char *nombreArchivo,int *compatible, int TPS,size_t tamanioRAM){ //Carga el segmento de codigo en la memoria
     FILE *fichero;
     unsigned char lector;
-    char vec[5];
-    int VecTamSeg[SEGMENTOS] = {0}; //5 ya que el param no esta contemplado en el vector de tamanios
+    char VecCabecera[5];
+    int VecTamSeg[5] = {0}; //5 ya que el param no esta contemplado en el vector de tamanios
    int i=0,j=0,OffsetEP=0, dirBaseCS=0, version=0;
     fichero=fopen(nombreArchivo,"rb");
     if (fichero==NULL){
@@ -296,20 +295,19 @@ void cargaCS(TVM *VMX,char *nombreArchivo,int *compatible, int TPS,size_t tamani
     }
     else{
         while (j<5 && fread(&lector,sizeof(unsigned char),1,fichero)==1){
-            vec[j]=lector;
+            VecCabecera[j]=lector;
             j++;
         }
-        if(verificacabecera(vec)==1){
+        if(verificacabecera(VecCabecera)==1){
             fread(&lector,sizeof(unsigned char),1,fichero); //Version
-            if(lector==1){
+            if(lector==1){  //PEPON PANCHO NO ENTENDISTE NADA
                 version=1;
                 fread(&lector,sizeof(unsigned char),1,fichero); //Tamanio del codigo
-                VecTamSeg[CS] |=lector;
-                VecTamSeg[CS] = VecTamSeg[CS]<<8;
+                VecTamSeg[CS] |=lector; //0x00XX
+                VecTamSeg[CS]<<8; // 0xXX00
                 fread(&lector,sizeof(unsigned char),1,fichero);
                 VecTamSeg[CS] |=lector;
-                
-                VecTamSeg[DS] = tamanioRAM - VecTamSeg[CS];
+                VecTamSeg[DS] = tamanioRAM - VecTamSeg[CS] - 1;
             }
             else{
                 if(lector==2){
@@ -332,16 +330,15 @@ void cargaCS(TVM *VMX,char *nombreArchivo,int *compatible, int TPS,size_t tamani
                 }
             }
             if((*compatible)){
-                ajustaVecTam(VecTamSeg,TPS);//tamanio del param segment
+                AjustaVecTam(VecTamSeg,TPS);//tamanio del param segment
                 armaTabla(VMX,VecTamSeg,OffsetEP,tamanioRAM); //Arma la tabla de segmentos
                 while(i<VecTamSeg[CS+2]){
                     fread(&lector,sizeof(unsigned char),1,fichero);
                     dirBaseCS=memologitofisica((*VMX).SEG,(*VMX).REG[CS]);
                     (*VMX).RAM[dirBaseCS+i]=lector;
-                    printf("[%x]: %x\n",dirBaseCS+i,lector);
                     i++;
                 }
-        }
+            }
         fclose(fichero);
     }
     }
@@ -367,9 +364,8 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
     int dirfisica,dirfisicaTCS,topA,topB,A,B,assemb=0,i=0;
     char orden;
     int indiceCS = (unsigned int)(*VMX).REG[CS]>>16;
-    while(i<argc && argv[i]!="-d")
-
-        i++;
+    while(i<argc && strcmp(argv[i],"-d")!=0)
+       i++;
     if(i<argc && strcmp(argv[i],"-d")==0)
         llamadissasembler(VMX); //Desensambla el programa
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
@@ -436,6 +432,10 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
         case 3: printf("Error: Fallo de segmento \n");
                 break;
         case 4: printf("Error: No hay suficiente memoria \n");
+                break;
+        case 5: printf("Error: Stack Overflow \n");
+                break;
+        case 6: printf("Error: Stack Underflow \n");
                 break;
     }
 }

@@ -18,6 +18,6 @@ char* devuelveRegistroBajo(unsigned char car);
 
 char* devuelveRegistroAlto(unsigned char car);
 
-int memologitofisica(unsigned short SEG[ENTRADAS][SEGMENTOS],unsigned int);
+int memologitofisica(short int SEG[SECCIONES][ENTRADAS],unsigned int);
 
 void llamadissasembler(TVM*);

@@ -61,20 +61,17 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
         break;
         
         case 0x02: //operando inmediato
-            valor= operando;
+            valor = operando;
         break;
         
         case 0x03: //operando de memoria
-            valor = 0;
-            mod = (unsigned int)(operando & MASC_MODIFICADOR) >> 2 ;
-            //if (mod == 0) 
-            //    celdas = CANTCELDA;
-            //else 
-            //    if (mod == 3)
-            //        celdas = 2;
-            //    else
-            //        celdas = 1;
-            celdas = CANTCELDA;
+            mod = (unsigned int)(operando & MASC_MODIFICADOR) >> 2;
+            if (mod == 0) 
+                celdas = 4; //long
+            if (mod == 2)
+                celdas = 2; //word
+            if (mod == 3)
+                celdas = 1; //byte
 
             direccion=recupera_direccion_operando(operando,vm);
             for (int i = 0; i < celdas; i++) {
@@ -83,7 +80,6 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
             }
         break;
     }
-
     return valor;
 } 
 
@@ -171,4 +167,56 @@ void salida (int x,int formato,int tamanio){
         printf("%d ",x);
     }
     printf("\n");
+}
+
+void generaVMI(TVM VMX,size_t tamanioRAM,char *nombreArchivo){
+    FILE *fichero;
+    int i=0,aux=0;
+    unsigned char grabador,alto=0,bajo=0;
+    fichero=fopen(nombreArchivo,"wb");
+    if(fichero!=NULL){
+        grabador='V';
+        fwrite(&grabador,sizeof(unsigned char),1,fichero);
+        grabador='M';
+        fwrite(&grabador,sizeof(unsigned char),1,fichero);
+        grabador='I';
+        fwrite(&grabador,sizeof(unsigned char),1,fichero);
+        grabador='2';
+        fwrite(&grabador,sizeof(unsigned char),1,fichero);
+        grabador='5';
+        fwrite(&grabador,sizeof(unsigned char),1,fichero);
+        grabador=1;
+        fwrite(&grabador,sizeof(unsigned char),1,fichero);
+        aux=tamanioRAM/1024;
+        alto=(aux&0xFF00)>>8;
+        bajo=aux&0x00FF;
+        grabador=alto;
+        fwrite(&grabador,sizeof(unsigned char),1,fichero);
+        grabador=bajo;
+        fwrite(&grabador,sizeof(unsigned char),1,fichero);
+        for(int j=0;j<16;j++){ //Este ciclo arma los registros
+                grabador=((VMX).REG[j]&0xFF000000)>>24;
+                fwrite(&grabador,sizeof(unsigned char),1,fichero);
+                grabador=((VMX).REG[j]&0x00FF0000)>>16;
+                fwrite(&grabador,sizeof(unsigned char),1,fichero);
+                grabador=((VMX).REG[j]&0x0000FF00)>>8;
+                fwrite(&grabador,sizeof(unsigned char),1,fichero);
+                grabador=((VMX).REG[j]&0x000000FF);
+                fwrite(&grabador,sizeof(unsigned char),1,fichero);
+        }
+        for(int k=0;k<8;k++){ //Este ciclo arma la bendita tabla de segmentos
+                grabador=((VMX).SEG[k][0]&0xFF00)>>8;
+                fwrite(&grabador,sizeof(unsigned char),1,fichero);
+                grabador=((VMX).SEG[k][0]&0x00FF);
+                fwrite(&grabador,sizeof(unsigned char),1,fichero);
+                grabador=((VMX).SEG[k][1]&0xFF00)>>8;
+                fwrite(&grabador,sizeof(unsigned char),1,fichero);
+                grabador=((VMX).SEG[k][1]&0x00FF);
+                fwrite(&grabador,sizeof(unsigned char),1,fichero);
+        }
+        for(i=0;i<tamanioRAM;i++){
+            grabador=(VMX).RAM[i];
+            fwrite(&grabador,sizeof(unsigned char),1,fichero);
+        }
+    }
 }

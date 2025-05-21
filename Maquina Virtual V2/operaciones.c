@@ -274,3 +274,36 @@ void NOT (int A, int topA, TVM *vm){
     MOV(A,topA,not,2,vm);
     NZ(not,vm);
 }
+
+void PUSH (int A, int topA, TVM *vm){
+    int valA = recupera_valor_operando(vm,topA,A);
+    
+    int memSP = 0x00000060; //el PUSH es un MOV de de un registro, inmediato o memoria a una posicion de memoria
+                            // el 6 es el valor que representa el SP y el 0 dice que son 4 bytes, los primeros 000000 dicen que no hay offset
+    (*vm).REG[SP] -=4;
+    if ((*vm).REG[SP] > (*vm).REG[SS])
+        MOV(memSP,3,valA,2,vm); // 
+        else
+        (*vm).error = 5; //stack overflow
+}
+
+void POP (int A, int topA, TVM *vm){
+    int B = 0x00000060; //el POP es un MOV de una posicion de memoria apuntado por SP a un registro o memoria
+                        // el 6 es el valor que representa el SP y el 0 dice que son 4 bytes, los primeros 000000 dicen que no hay offset
+
+    if (((*vm).REG[SP] & 0xFFFF) < ((*vm).SEG[((*vm).REG[SS]>>16) & 0xF][1])){
+        MOV(A,topA,B,3,vm);
+        (*vm).REG[SP] += 4;
+    } else
+        (*vm).error = 6; //stack underflow
+}
+
+void CALL (int A, int topA, TVM *vm){
+    PUSH((*vm).REG[IP],2,vm); // CALL es similar a un PUSH IP y JMP
+    JMP(A,topA,vm);
+}
+
+void RET (int A, int topA, TVM *vm){
+    int B = 0x50;  // RET es similiar a un POP IP ==> MOV IP,[SP]
+    POP(B,1,vm);
+}
