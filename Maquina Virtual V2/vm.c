@@ -6,7 +6,7 @@
 #include <string.h>
 #include <string.h>
 #include <stdlib.h>
-#define OP1 9
+#define OP1 15
 #define OP2 15
 #define NULO -1
 
@@ -24,7 +24,7 @@ void cargaPS(TVM*,char**,int,int*);
 
 void cargaCS(TVM*,char*,int*,int,size_t);   
 
-void iniciaEjecucion(TVM*, char **, int, void(*op1op[])(), void(*op2op[])());
+void iniciaEjecucion(TVM*, char **, int, void(*op1op[])(), void(*op2op[])(),int,size_t);
 
 void iniciaRAM(int, char*[], TVM*,size_t*);
 
@@ -34,43 +34,56 @@ void cargaVMI(TVM*,char*,int*,size_t*);
 
 int verificaVMI(char vec[6]);
 
+void sys_breakpoint(TVM, size_t, char *[]);
+
 int main(int argc, char *argv[]){ 
     TVM VMX;
     size_t tamanioRAM = 16384;
     VMX.error=0;
-    int compatible=1,k,i,j=0,TPS=0;
+    int compatible=1,k,i,j=0,TPS=0,tarch=0,breakdown=0;
     void (*op2op[OP2])(int, int, int, int, TVM*)={MOV, ADD, SUB, SWAP, MUL, DIV, CMP, SHL, SHR, AND, OR, XOR, LDL, LDH, RND};
-    void (*op1op[OP1])(int, int, TVM*)={SYS, JMP, JZ, JP, JN, JNZ, JNP, JNN, NOT};
-    if (detectaArch(argv)==1 || detectaArch(argv)==2){
+    void (*op1op[OP1])(int, int, TVM*)={SYS, JMP, JZ, JP, JN, JNZ, JNP, JNN, NOT,NULL,NULL,PUSH,POP,CALL,RET};
+    tarch=detectaArch(argv);
+    if (tarch==1 || tarch==2){
         iniciaRAM(argc,argv,&VMX,&tamanioRAM); //Inicia la memoria RAM
         cargaPS(&VMX,argv,argc,&TPS); //Carga el segmento de datos en la memoria
         cargaCS(&VMX,argv[1],&compatible,TPS,tamanioRAM); //Carga el segmento de codigo en la memoria desde un .vmx
+        if(tarch==2)
+            breakdown=1;
+        else
+            breakdown=0;
     }
     else{
-            if (detectaArch(argv)==3)
+            if (tarch==3)
                 cargaVMI(&VMX,argv[1],&compatible,&tamanioRAM); //Carga el segmento de datos en la memoria desde un .vmi
             else
                 printf("Error: No se ha indicado un archivo .vmx o .vmi\n");
     }
-    (compatible)?iniciaEjecucion(&VMX,argv,argc,op1op,op2op):printf("El archivo no es compatible. \n"); //Inicia la ejecucion del programa
+    (compatible)?iniciaEjecucion(&VMX,argv,argc,op1op,op2op,breakdown,tamanioRAM):printf("El archivo no es compatible. \n"); //Inicia la ejecucion del programa
     free(VMX.RAM); //Libera la memoria RAM
 }
 
 int detectaArch(char *argv[]){ //Funcion que detecta si el archivo es un .vmx, un .vmi o ambos
-    int i=0;
+    int i;
     if(strstr(argv[1],".vmx")!=NULL){
         if(strstr(argv[2],".vmi")==NULL)
-            return 1; //Solo .vmx
+            i = 1; //Solo .vmx
         else
-            return 2; //Ambos
+            i = 2; //Ambos
     }
     else{
         if(strstr(argv[1],".vmi")!=NULL)
-            return 3; //Solo .vmi
+            i = 3; //Solo .vmi
         else
-            return 0; //Ninguno
+            i = 0; //Ninguno
     }
-        
+    
+    return i;
+}
+
+void sys_breakpoint(TVM VMX, size_t tamanioRAM, char *argv[]){
+    generaVMI(VMX,tamanioRAM,argv[2]);
+    scanf("");
 }
 
 void cargaVMI(TVM *VMX,char *nombreArchivo,int *compatible,size_t *tamanioRAM){
@@ -360,7 +373,7 @@ int armaMemoria(char car1, char car2, char car3){
     return i;
 }
 
-void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*op2op[])() ){ //Funcion que inicia la ejecucion del programa
+void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*op2op[])(), int breakdown,size_t tamanioRAM){ //Funcion que inicia la ejecucion del programa
     int dirfisica,dirfisicaTCS,topA,topB,A,B,assemb=0,i=0;
     char orden;
     int indiceCS = (unsigned int)(*VMX).REG[CS]>>16;
@@ -371,9 +384,9 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
     printf("Iniciando la ejecucion del programa...\n");
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
-    while((*VMX).RAM[dirfisica]!=0x0F && (*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no sea un stop, no hay error y esta dentro del CS
+    while((*VMX).RAM[dirfisica]!=0x0F && (*VMX).RAM[dirfisica]!=0x0E && (*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no sea un stop, no sea un ret, no haya error y esté dentro del CS
         orden=((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar   
-        if(!(orden>=0x00 && orden<=0x08) && !(orden>=0x10 && orden<=0x1E)){ ///PREGUNTAR SI LA ORDEN ES INVALIDA: cuando el codigo de operacion de la instruccion a ejecutar no existe 
+        if(!(orden>=0x00 && orden<=0x08) && !(orden>=0x0B && orden<=0x0E) && !(orden>=0x10 && orden<=0x1E)){ ///PREGUNTAR SI LA ORDEN ES INVALIDA: cuando el codigo de operacion de la instruccion a ejecutar no existe 
             (*VMX).error= 1;
         }
         else{      
@@ -412,7 +425,13 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
                         op1op[(orden & 0x0F)]((int)(*VMX).RAM[dirfisica+1],topB,VMX);
                         break;
                     case 0x02: //imnediato.
-                        op1op[(orden & 0x0F)](armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]),topB,VMX);
+                        int inmediato = armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]);
+                        if((orden & 0x0F)==0x00 && breakdown && inmediato==0x0F)
+                            sys_breakpoint(*VMX,tamanioRAM,argv);
+                        else{
+                            if (((orden & 0x0F)!=0x00) || ((orden & 0x0F)==0x00 && inmediato!=0x0F))
+                                op1op[(orden & 0x0F)](inmediato,topB,VMX);
+                        }
                         break;
                     case 0x03: //memoria.
                         op1op[(orden &0x0F)](armaMemoria((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2],(*VMX).RAM[dirfisica+3]),topB,VMX);
@@ -438,6 +457,7 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
         case 6: printf("Error: Stack Underflow \n");
                 break;
     }
+    generaVMI(*VMX,tamanioRAM,argv[1]);
 }
 
 

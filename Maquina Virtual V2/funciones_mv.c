@@ -2,18 +2,41 @@
 #include <string.h>
 #include "MV.h"
 #include "mascaras.h"
-#include <ctype.h> 
+#include "valores_registros.h"
+#include <ctype.h>
+#define NULO -1 
 
-int recupera_direccion_registro(int contenido_registro,TVM *vm){
-    int inicioSeg = (unsigned int)(contenido_registro & 0xFFFF0000) >> 16;
+int recupera_segmento(int contenido_registro){
+    return (unsigned int)(contenido_registro & 0xFFFF0000) >> 16;
+}
+
+int PermanezcoEnSegmento(TVM *vm,int dir,int indice_seg,int desplazamiento){
+    int dir_inicio_seg;
+    int dir_fin_seg;
+    
+    dir_inicio_seg=(*vm).SEG[indice_seg][0];
+    dir_fin_seg=dir_inicio_seg+(*vm).SEG[indice_seg][1];
+    
+    return (dir>=dir_inicio_seg && (dir + desplazamiento) < dir_fin_seg);
+}
+
+void recupera_direccion_registro(int contenido_registro,TVM *vm,int *indice_seg,int *dir){
+    *indice_seg = recupera_segmento(contenido_registro);
     int offsetReg = (unsigned int)contenido_registro & MASC_SEGMENTO;
-    return ((*vm).SEG[inicioSeg][0] + offsetReg);
+    *dir = ((*vm).SEG[*indice_seg][0] + offsetReg);
 }
 
 int recupera_direccion_operando(int operando,TVM *vm){
-    int offset = (unsigned int)(operando & MASC_OFFSET) >> 8 ;
+    int indice_seg;
+    int dir;
+    int offset = (unsigned int)(operando & MASC_OFFSET) >> 8;
     int cod = (unsigned int)(operando & 0x000000F0 )>> 4;
-    return  (recupera_direccion_registro((*vm).REG[cod],vm) + offset);
+    recupera_direccion_registro((*vm).REG[cod],vm,&indice_seg,&dir);   
+    dir += offset;
+    if (PermanezcoEnSegmento(vm,dir,indice_seg,0)) //verifica que el calculo de la direccion no se encuentre fuera de los limites del segmento
+        return  dir;
+    else 
+        return NULO;
 } 
 
 int mascara(int modificador){
@@ -41,13 +64,16 @@ int mascara(int modificador){
 
 
 int recupera_valor_operando(TVM *vm, int top, int operando){
-    int valor; //comunes
+    int valor=0; //comunes
     int mod,masc,cod,mascara_de_registro; //para registros
-    int direccion,celdas; //para memoria
+    int dir,celdas; //para memoria
+    int contenido_registro;
+    int indice_seg;
+    int cod_reg;
     switch (top){
 
         case 0x01: //operando de registro
-            mod = (unsigned int)(operando & MASC_MODIFICADOR) >> 2; //obtiene el modificador del registro
+            mod = (unsigned int)(operando & MASC_MODIFICADOR_REG) >> 2; //obtiene el modificador del registro
             cod = (unsigned int)(operando & MASC_CODIGO) >> 4 ; //obtiene el codigo de registro
             mascara_de_registro = mascara(mod);
             valor = (*vm).REG[cod];
@@ -65,33 +91,57 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
         break;
         
         case 0x03: //operando de memoria
-            mod = (unsigned int)(operando & MASC_MODIFICADOR) >> 2;
-            if (mod == 0) 
-                celdas = 4; //long
-            if (mod == 2)
-                celdas = 2; //word
-            if (mod == 3)
-                celdas = 1; //byte
+            dir=recupera_direccion_operando(operando,vm);
+            if(dir!=NULO){
+                mod = operando & MASC_MODIFICADOR_MEM;
+                switch(mod){
+                    case 0x00:
+                        celdas=4; //long
+                    break;
 
-            direccion=recupera_direccion_operando(operando,vm);
-            for (int i = 0; i < celdas; i++) {
-                valor <<= 8;
-                valor |= (vm->RAM[direccion + i] & 0xFF);
+                    case 0x01:
+                        celdas=4; //long
+                    break;
+                    
+                    case 0x02:
+                        celdas=2; //word
+                    break;
+
+                    case 0x03:
+                        celdas=1; //byte
+                    break;
+                }
+
+                cod_reg = (unsigned int) (operando & MASC_CODIGO) >> 4;
+                contenido_registro=(*vm).REG[cod_reg];
+                indice_seg= recupera_segmento(contenido_registro);  //!!!!necesito saber en que segmento estoy
+
+                if(PermanezcoEnSegmento(vm,dir,indice_seg,celdas)){//!!!! debo verificar que no me excedo del segmento)
+                    for (int i = 0; i < celdas; i++) {
+                        valor <<= 8;
+                        valor |= (vm->RAM[dir + i] & 0xFF);
+                    }
+                }
+                else 
+                    vm->error = 3; //!!!!fallo de segmento si quiero leer/escribir fuera de los limites del segmento
             }
-        break;
+            else
+                vm->error=3;
+            break;
     }
-    return valor;
+    return valor;      
 } 
 
 int jump_valido (TVM vm, int salto){
-    int inicioCS = vm.SEG[0][0];
-    int finCS = vm.SEG[0][1] + inicioCS;
+    int IndiceCS = (vm.REG[CS] >> 16) & 0xFFFF;
+    int inicioCS = vm.SEG[IndiceCS][0];
+    int finCS = vm.SEG[IndiceCS][1] + inicioCS;
     return (salto < finCS) && (salto > inicioCS);
 }
 
 void jump (TVM *vm,int salto){
     if (!jump_valido(*vm,salto))
-        vm->error = 3; // Fallo de segmento
+        vm->error = 3; // Fallo de segmento 
 }
 
 void entrada(int *x,int formato)
@@ -169,11 +219,15 @@ void salida (int x,int formato,int tamanio){
     printf("\n");
 }
 
-void generaVMI(TVM VMX,size_t tamanioRAM,char *nombreArchivo){
+void generaVMI(TVM vm,size_t tamanioRAM,char *nombreArchivo){
     FILE *fichero;
     int i=0,aux=0;
     unsigned char grabador,alto=0,bajo=0;
-    fichero=fopen(nombreArchivo,"wb");
+    char *auxc;
+    strcpy(auxc,nombreArchivo);
+    char *punto = strrchr(auxc, '.');
+    strcpy(punto,".vmi");
+    fichero=fopen(auxc,"wb");
     if(fichero!=NULL){
         grabador='V';
         fwrite(&grabador,sizeof(unsigned char),1,fichero);
@@ -195,27 +249,27 @@ void generaVMI(TVM VMX,size_t tamanioRAM,char *nombreArchivo){
         grabador=bajo;
         fwrite(&grabador,sizeof(unsigned char),1,fichero);
         for(int j=0;j<16;j++){ //Este ciclo arma los registros
-                grabador=((VMX).REG[j]&0xFF000000)>>24;
+                grabador=((vm).REG[j]&0xFF000000)>>24;
                 fwrite(&grabador,sizeof(unsigned char),1,fichero);
-                grabador=((VMX).REG[j]&0x00FF0000)>>16;
+                grabador=((vm).REG[j]&0x00FF0000)>>16;
                 fwrite(&grabador,sizeof(unsigned char),1,fichero);
-                grabador=((VMX).REG[j]&0x0000FF00)>>8;
+                grabador=((vm).REG[j]&0x0000FF00)>>8;
                 fwrite(&grabador,sizeof(unsigned char),1,fichero);
-                grabador=((VMX).REG[j]&0x000000FF);
+                grabador=((vm).REG[j]&0x000000FF);
                 fwrite(&grabador,sizeof(unsigned char),1,fichero);
         }
         for(int k=0;k<8;k++){ //Este ciclo arma la bendita tabla de segmentos
-                grabador=((VMX).SEG[k][0]&0xFF00)>>8;
+                grabador=((vm).SEG[k][0]&0xFF00)>>8;
                 fwrite(&grabador,sizeof(unsigned char),1,fichero);
-                grabador=((VMX).SEG[k][0]&0x00FF);
+                grabador=((vm).SEG[k][0]&0x00FF);
                 fwrite(&grabador,sizeof(unsigned char),1,fichero);
-                grabador=((VMX).SEG[k][1]&0xFF00)>>8;
+                grabador=((vm).SEG[k][1]&0xFF00)>>8;
                 fwrite(&grabador,sizeof(unsigned char),1,fichero);
-                grabador=((VMX).SEG[k][1]&0x00FF);
+                grabador=((vm).SEG[k][1]&0x00FF);
                 fwrite(&grabador,sizeof(unsigned char),1,fichero);
         }
         for(i=0;i<tamanioRAM;i++){
-            grabador=(VMX).RAM[i];
+            grabador=(unsigned char)(vm).RAM[i];
             fwrite(&grabador,sizeof(unsigned char),1,fichero);
         }
     }

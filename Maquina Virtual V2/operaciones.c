@@ -1,7 +1,8 @@
 #include "operaciones.h"
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
+#define NULO -1
 //Funcion que modica los bits NZ del registro CC 
 void NZ (int valor, TVM *vm){
     vm->REG[CC] = 0;
@@ -19,16 +20,19 @@ void NZ (int valor, TVM *vm){
 void MOV (int A, int topA, int B, int topB, TVM *vm) {
     int valB =0; 
     int posReg,masc,corr=0; // variables para registros
-    int dir,celdas; // variables para memoria
-    int modReg=0; // comun para memoria o registro
+    int dir,seg,celdas; // variables para memoria
+    int mod=0; // comun para memoria o registro
+    int contenido_registro;
+    int indice_seg;
+    int cod_reg;
     valB=recupera_valor_operando(vm,topB,B);
-    modReg = (A & 0x0000000C) >> 2; 
+     
     switch(topA){
-
         // 01: registro
         case 0x01:
-            masc = mascara(modReg);
-            if (modReg == 0x02)
+            mod = (unsigned int) (A & MASC_MODIFICADOR_REG) >> 2;
+            masc = mascara(mod);
+            if (mod == 0x02)
                 corr = 1;
             posReg = (unsigned int)(A & MASC_CODIGO) >> 4; 
             valB = (unsigned int) valB << (corr*8);
@@ -38,30 +42,41 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
         // 11: memoria
         case 0x03:
             dir = recupera_direccion_operando(A,vm);
-            
-            if (dir < 0 || dir >= MEMORIA) {  // Fallo de segmento. direccion fuera de memoria
-                vm->error = 3;
-                return;
-            }
-            
-            //if (modReg == 0) // dependiendo el modificador del registro es la cantidad de celdas a modificar
-            //    celdas = CANTCELDA;
-            //else 
-            //    if (modReg == 3)
-            //        celdas = 2;
-            //    else
-            //        celdas = 1;
+            if (dir!=NULO){ //!!!!fallo de segmento si dir==-1 
+                mod =  A & MASC_MODIFICADOR_MEM;
+                switch(mod){
+                    case 0x00:
+                        celdas=4; //long
+                    break;
 
-            celdas = CANTCELDA;
-            if (dir + celdas > MEMORIA) { // Fallo de segmento. la direccion que quiero modificar fuera de memoria
-                vm->error = 3;
-                return;
-            }
+                    case 0x01:
+                        celdas=4; //long
+                    break;
+                    
+                    case 0x02:
+                        celdas=2; //word
+                    break;
 
-            for (int i = celdas; i>0; i--){
-                vm->RAM[dir++] = valB >> ((i-1)*8); 
-            } 
-            break;                            
+                    case 0x03:
+                        celdas=1; //byte
+                    break;
+                }
+                cod_reg = (unsigned int) (A & MASC_CODIGO) >> 4;
+                contenido_registro=(*vm).REG[cod_reg];
+                indice_seg= recupera_segmento(contenido_registro);  //!!!!necesito saber en que segmento estoy
+                
+                if (PermanezcoEnSegmento(vm,dir,indice_seg,celdas)){   //!!!!debo verificar que no me excedo del segmento
+                    for (int i = celdas; i>0; i--){
+                    vm->RAM[dir++] = valB >> ((i-1)*8);    
+                    }
+                }
+                else 
+                    vm->error = 3; //!!!!fallo de segmento si quiero leer/escribir fuera de los limites del segmento
+            }
+            else 
+                vm->error = 3;
+                //!!!! else aborta la ejecucion del programa
+        break;     
         }
 }
 
@@ -202,19 +217,72 @@ void SYS2 (int dir,int celdas,int tamanio,int formato, TVM *vm){
     }
 }
 
+void SYS3(int dirMem, int cantCarac, TVM *vm) {
+    char cadena[200] = {0};
+    int tamCadena;
+    int IndiceEDX = ((*vm).REG[EDX]>>16) & 0xFFFF;
+
+    if (fgets(cadena, sizeof(cadena), stdin) == NULL) {
+        return;
+    }
+
+    int len = strlen(cadena);
+    if (len > 0 && cadena[len - 1] == '\n') {
+        cadena[len - 1] = '\0';
+        len--;
+    }
+
+    if (cantCarac == -1) {
+        tamCadena = len;
+    } else {
+        tamCadena = (len < cantCarac) ? len : cantCarac;
+    }
+
+    if (dirMem + tamCadena < (*vm).SEG[IndiceEDX][0]+(*vm).SEG[IndiceEDX][1]) {
+        strncpy((*vm).RAM + dirMem, cadena, tamCadena);
+        (*vm).RAM[dirMem + tamCadena] = '\0';
+    } else{
+        // ERROR: cadena fuera de segmento
+    }
+}
+
+void SYS4 (int dirMem,TVM *vm){
+    int x,i=0;
+    while((*vm).RAM[dirMem+i]!=0){
+        printf("%c",(*vm).RAM[dirMem+i]);
+        i++;
+    }
+}
+
+void SYS7 (){
+    system("cls");
+}
+
 void SYS (int operando,int topA, TVM *vm){
-    int dirMem = (((*vm).SEG[1][0])) + ((*vm).REG[EDX]&0x0000FFFF);
-    //int dirMem = recupera_direccion_registro((*vm).REG[EDX],vm);
+    int IndiceReg = ((*vm).REG[EDX] >> 16) & 0xFFFF;
+    int dirMem = (((*vm).SEG[IndiceReg][0])) + ((*vm).REG[EDX]&0x0000FFFF);
     int celdas = (unsigned int)(*vm).REG[ECX] & MASC_RL;
     int tamanio = (unsigned int)((*vm).REG[ECX] & MASC_RH) >> 8;
     int formato = (unsigned int)(*vm).REG[EAX] & MASC_RL;
+    int cantCarac = (unsigned int)(*vm).REG[ECX] & MASC_RX;
     switch (operando){
         case 0x01:
             SYS1(dirMem,celdas,tamanio,formato,vm);
-            break;
+        break;
         case 0x02:
             SYS2(dirMem,celdas,tamanio,formato,vm);
-            break;
+        break;
+        case 0x03:
+            SYS3(dirMem,cantCarac,vm);
+        break;
+        case 0x04:
+            SYS4(dirMem,vm);
+        break;
+        case 0x07:
+            SYS7();
+        break;
+        
+
     }
 }
 
@@ -291,7 +359,7 @@ void POP (int A, int topA, TVM *vm){
     int B = 0x00000060; //el POP es un MOV de una posicion de memoria apuntado por SP a un registro o memoria
                         // el 6 es el valor que representa el SP y el 0 dice que son 4 bytes, los primeros 000000 dicen que no hay offset
 
-    if (((*vm).REG[SP] & 0xFFFF) < ((*vm).SEG[((*vm).REG[SS]>>16) & 0xF][1])){
+    if (((*vm).REG[SP] & 0xFFFF) + 4 < ((*vm).SEG[((*vm).REG[SS]>>16) & 0xF][1])){
         MOV(A,topA,B,3,vm);
         (*vm).REG[SP] += 4;
     } else

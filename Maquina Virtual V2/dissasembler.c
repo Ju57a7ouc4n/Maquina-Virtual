@@ -82,6 +82,15 @@ void imprimeOrdenUnOp(char orden){
         case 0x08: //NOT
             printf("NOT ");
             break;
+        case 0x0B: //PUSH
+            printf("PUSH ");
+            break;
+        case 0x0C: //POP
+            printf("POP ");
+            break;
+        case 0x0D: //CALL
+            printf("CALL ");
+            break;
     }
 }
 
@@ -89,6 +98,10 @@ void imprimeOrdenCeroOp(char orden){
     switch(orden){
         case 0x0F:
             printf("STOP ");
+            break;
+        case 0x0E:
+            printf("RET ");
+            break;
     }
 }
 
@@ -101,17 +114,19 @@ void imprimeInmediato(char car1, char car2){
 
 void imprimeMemoria(char car1, char car2, char car3){
     int i=0;
+    int mod;
     unsigned char aux;
     i=(char)car1;
     i=i<<8;
     i|=(char)car2;
     aux=((unsigned char)car3>>4);
-    if(car3&0x0F==0 ||car3&0x0F==0x01){
+    mod=car3 & MASC_MODIFICADOR_MEM;
+    if(mod==0x00 || mod==0x01){   // car1 car2 car3 ==> offsetMem + Reg ==> 
         printf("l");
         printf("[%s+%x]",devuelveRegistro(aux),i);
     }
     else{
-        if(car3&0x0F==0x02){
+        if(mod==0x02){
         printf("w");
         printf("[%s+%x]",devuelveRegistro(aux),i);
         }

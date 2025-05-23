@@ -8,8 +8,9 @@
 #define MASC_UN_OP 0x20       //0010 0000
 
 //mascaras para operandos de registro
-#define MASC_MODIFICADOR 0x0C   //0000 1100
-#define MASC_CODIGO 0xF0        //1111 0000    
+#define MASC_MODIFICADOR_REG 0x0C     //0000 1100
+#define MASC_MODIFICADOR_MEM 0x03 //0000 0011
+#define MASC_CODIGO 0xF0          //1111 0000    
 
 #define MASC_ERX 0xFFFFFFFF //registro completo 
 #define MASC_RL 0x000000FF //registro x low
