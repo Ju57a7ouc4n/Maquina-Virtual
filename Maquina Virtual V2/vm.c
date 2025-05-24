@@ -510,5 +510,5 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
         case 6: printf("Error: Stack Underflow \n");
                 break;
     }
-    generaVMI(*VMX,tamanioRAM,argv[1]);
+    // generaVMI(*VMX,tamanioRAM,argv[1]);   //LINEA PARA GENERAR VMIs DE PRUEBA
 }
