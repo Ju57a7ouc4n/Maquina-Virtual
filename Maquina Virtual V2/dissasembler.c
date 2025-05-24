@@ -267,14 +267,22 @@ void imprime_tab (int x){
     printf("| ");
 }
 void llamadissasembler(TVM *VMX){
-    int dirfisica=0,topA=0,topB=0,orden=0,assemb=0,flag=0; 
+    int dirfisica=0,dirfisicaEP=0,topA=0,topB=0,orden=0,assemb=0,flag=0; 
     int A,B;
     int indiceCS = (unsigned int)(*VMX).REG[CS]>>16;
-    dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]); 
+    dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[CS]);
+    dirfisicaEP=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
+ 
     while((*VMX).error==0 && orden!=0x0F && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no hay error y dentro de CS
             orden=(char)((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar          
             topB=(((*VMX).RAM[dirfisica] & MASC_TIPO_OP_B) >> 6);
             topA=((*VMX).RAM[dirfisica] & MASC_TIPO_OP_A) >> 4;
+
+            if(dirfisicaEP != dirfisica)
+                printf(" ");
+            else
+                printf(">");
+            
             printf("[%04X]\t",dirfisica);
 
             if((orden&0x10) == 0x10){ //Dos operandos
@@ -312,11 +320,11 @@ void llamadissasembler(TVM *VMX){
                 imprimeOrdenDosOp(orden);
                 if(topA==0x01){ //registro.
                     imprimeRegistro((*VMX).RAM[dirfisica+topB+1]);
-                     printf(",");                
+                    printf(",");                
                  }
-                  else{  //memoria.
-                     imprimeMemoria((*VMX).RAM[dirfisica+topB+1],(*VMX).RAM[dirfisica+topB+2],(*VMX).RAM[dirfisica+topB+3]);
-                     printf(",");
+                else{  //memoria.
+                    imprimeMemoria((*VMX).RAM[dirfisica+topB+1],(*VMX).RAM[dirfisica+topB+2],(*VMX).RAM[dirfisica+topB+3]);
+                    printf(",");
                  }
                 switch (assemb){
                      case 1:

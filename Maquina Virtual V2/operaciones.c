@@ -281,8 +281,6 @@ void SYS (int operando,int topA, TVM *vm){
         case 0x07:
             SYS7();
         break;
-        
-
     }
 }
 
@@ -348,12 +346,12 @@ void PUSH (int A, int topA, TVM *vm){
     
     int memSP = 0x00000060; //el PUSH es un MOV de de un registro, inmediato o memoria a una posicion de memoria
                             // el 6 es el valor que representa el SP y el 0 dice que son 4 bytes, los primeros 000000 dicen que no hay offset
-    (*vm).REG[SP] -=4;
+    (*vm).REG[SP] -= 4;
     if ((*vm).REG[SP] > (*vm).REG[SS])
         MOV(memSP,3,valA,2,vm); // 
         else
         (*vm).error = 5; //stack overflow
-}
+}  
 
 void POP (int A, int topA, TVM *vm){
     int B = 0x00000060; //el POP es un MOV de una posicion de memoria apuntado por SP a un registro o memoria

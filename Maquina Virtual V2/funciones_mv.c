@@ -225,9 +225,11 @@ void generaVMI(TVM vm,size_t tamanioRAM,char *nombreArchivo){
     unsigned char grabador,alto=0,bajo=0;
     char *auxc;
     strcpy(auxc,nombreArchivo);
-    char *punto = strrchr(auxc, '.');
-    strcpy(punto,".vmi");
+    char *punto = strchr(auxc, '.');
+    strcat(auxc,".vmi");
+    printf("Paso tercer sentencia");
     fichero=fopen(auxc,"wb");
+    printf("ENTRO VMI");
     if(fichero!=NULL){
         grabador='V';
         fwrite(&grabador,sizeof(unsigned char),1,fichero);
