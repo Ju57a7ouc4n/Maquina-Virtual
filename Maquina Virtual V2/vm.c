@@ -51,8 +51,6 @@ int main(int argc, char *argv[]){
         cargaPS(&VMX,argv,argc,&TPS,&PPP,&cantp); //Carga el segmento de datos en la memoria
         Inicializacion(&VMX,argv[1],&compatible,TPS,tamanioRAM); //Carga el segmento de codigo en la memoria desde un .vmx
         IniciaPila(&VMX,PPP,cantp);
-        printf("ANTES DEL VMI");
-        generaVMI(VMX,tamanioRAM,argv[2]);
         if(tarch==2)
             breakdown=1;
         else
@@ -339,7 +337,7 @@ void Inicializacion(TVM *VMX,char *nombreArchivo,int *compatible, int TPS,size_t
     unsigned char lector;
     char VecCabecera[5];
     int VecTamSeg[6] = {0}; //5 ya que el param no esta contemplado en el vector de tamanios
-   int i=0,j=0,OffsetEP=0, dirBaseCS=0, version=0;
+   int i=0,j=0,OffsetEP=0, dirBaseCS=0, dirBaseKS=0, version=0;
     fichero=fopen(nombreArchivo,"rb");
     if (fichero==NULL){
         printf("Error al abrir el archivo\n");
@@ -384,11 +382,21 @@ void Inicializacion(TVM *VMX,char *nombreArchivo,int *compatible, int TPS,size_t
                 AjustaVecTam(VecTamSeg,TPS);//Tamanio del param segment
                 armaTabla(VMX,VecTamSeg,OffsetEP,tamanioRAM); //Arma la tabla de segmentos
                 //CARGA CS
+                dirBaseCS=memologitofisica((*VMX).SEG,(*VMX).REG[CS]);
                 while(i<VecTamSeg[CS+2]){
                     fread(&lector,sizeof(unsigned char),1,fichero);
-                    dirBaseCS=memologitofisica((*VMX).SEG,(*VMX).REG[CS]);
                     (*VMX).RAM[dirBaseCS+i]=lector;
                     i++;
+                }
+                //CARGA KS 
+                if ((*VMX).REG[KS] != NULO){
+                    dirBaseKS = memologitofisica((*VMX).SEG,(*VMX).REG[KS]);
+                    i = 0;
+                    while(i<VecTamSeg[1]){
+                        fread(&lector,sizeof(unsigned char),1,fichero);   //CREO Q ESTE PINGO DEBERIA ANDAR
+                        (*VMX).RAM[dirBaseKS+i]=lector;
+                        i++;
+                    }
                 }
             }
         fclose(fichero);
