@@ -65,6 +65,7 @@ int main(int argc, char *argv[]){
     (compatible)?iniciaEjecucion(&VMX,argv,argc,op1op,op2op,breakdown,tamanioRAM):printf("El archivo no es compatible. \n"); //Inicia la ejecucion del programa
     free(VMX.RAM); //Libera la memoria RAM
 }
+
 //LA VEDETTE DE LA MAQUINA VIRTUAL
 int memologitofisica(short int tabla[SECCIONES][ENTRADAS], unsigned int dirlogica){ //Funcion que convierte una direccion logica a fisica
     unsigned int IPH=0, offset=0;
@@ -432,7 +433,6 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
         llamadissasembler(VMX); //Desensambla el programa
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
     printf("Iniciando la ejecucion del programa...\n");
-    dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
     //       MIENTRAS:  NO ES STOP     Y  DIR FISICA ES VALIDA  Y NO HAY ERROR         Y DIR FISICA DENTRO DEL CODE SEGMENT  
     while((*VMX).RAM[dirfisica]!=0x0F && dirfisica!=NULO && (*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no sea un stop, no sea un ret, no haya error y esté dentro del CS
         orden=((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar   
@@ -512,7 +512,3 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
     }
     generaVMI(*VMX,tamanioRAM,argv[1]);
 }
-
-
-
-

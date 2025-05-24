@@ -22,7 +22,6 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
     int posReg,masc,corr=0; // variables para registros
     int dir,seg,celdas; // variables para memoria
     int mod=0; // comun para memoria o registro
-    int contenido_registro;
     int indice_seg;
     int cod_reg;
     valB=recupera_valor_operando(vm,topB,B);
@@ -40,7 +39,9 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
         break;  
         
         // 11: memoria
-        case 0x03:
+
+        ///////////// EL PROBLEMA ESTA ACA //////////// 
+        case 0x03:     
             dir = recupera_direccion_operando(A,vm);
             if (dir!=NULO){ //!!!!fallo de segmento si dir==-1 
                 mod =  A & MASC_MODIFICADOR_MEM;
@@ -62,21 +63,23 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
                     break;
                 }
                 cod_reg = (unsigned int) (A & MASC_CODIGO) >> 4;
-                contenido_registro=(*vm).REG[cod_reg];
-                indice_seg= recupera_segmento(contenido_registro);  //!!!!necesito saber en que segmento estoy
-                
+                indice_seg= recupera_segmento((*vm).REG[cod_reg]);  //!!!!necesito saber en que segmento estoy
+
                 if (PermanezcoEnSegmento(vm,dir,indice_seg,celdas)){   //!!!!debo verificar que no me excedo del segmento
                     for (int i = celdas; i>0; i--){
                     vm->RAM[dir++] = valB >> ((i-1)*8);    
                     }
                 }
-                else 
+                else {
                     vm->error = 3; //!!!!fallo de segmento si quiero leer/escribir fuera de los limites del segmento
+                }
             }
-            else 
+            else{ 
                 vm->error = 3;
-                //!!!! else aborta la ejecucion del programa
+            }   //!!!! else aborta la ejecucion del programa
         break;     
+        ///////////// EL PROBLEMA ESTA ACA //////////// 
+
         }
 }
 

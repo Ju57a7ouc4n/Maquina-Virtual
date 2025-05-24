@@ -17,7 +17,7 @@ int PermanezcoEnSegmento(TVM *vm,int dir,int indice_seg,int desplazamiento){
     dir_inicio_seg=(*vm).SEG[indice_seg][0];
     dir_fin_seg=dir_inicio_seg+(*vm).SEG[indice_seg][1];
     
-    return (dir>=dir_inicio_seg && (dir + desplazamiento) < dir_fin_seg);
+    return ((dir>=dir_inicio_seg) && ((dir + desplazamiento) <= dir_fin_seg));
 }
 
 void recupera_direccion_registro(int contenido_registro,TVM *vm,int *indice_seg,int *dir){
@@ -134,9 +134,8 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
 
 int jump_valido (TVM vm, int salto){
     int IndiceCS = (vm.REG[CS] >> 16) & 0xFFFF;
-    int inicioCS = vm.SEG[IndiceCS][0];
-    int finCS = vm.SEG[IndiceCS][1] + inicioCS;
-    return (salto < finCS) && (salto > inicioCS);
+    int finCS = vm.SEG[IndiceCS][1];
+    return (salto < finCS);
 }
 
 void jump (TVM *vm,int salto){

@@ -2,6 +2,7 @@
 #include "dissasembler.h"
 #include "mascaras.h"
 #include "valores_registros.h"
+#include <ctype.h>
 
 void imprimeOrdenDosOp(char orden){
     switch(orden){
@@ -123,16 +124,16 @@ void imprimeMemoria(char car1, char car2, char car3){
     mod=car3 & MASC_MODIFICADOR_MEM;
     if(mod==0x00 || mod==0x01){   // car1 car2 car3 ==> offsetMem + Reg ==> 
         printf("l");
-        printf("[%s+%x]",devuelveRegistro(aux),i);
+        printf("[%s+%d]",devuelveRegistro(aux),i);
     }
     else{
         if(mod==0x02){
         printf("w");
-        printf("[%s+%x]",devuelveRegistro(aux),i);
+        printf("[%s+%d]",devuelveRegistro(aux),i);
         }
         else{ //0x03
             printf("b");
-            printf("[%s+%x]",devuelveRegistro(aux),i);
+            printf("[%s+%d]",devuelveRegistro(aux),i);
         }
     }
 }
@@ -165,8 +166,23 @@ char* devuelveRegistro(unsigned char car){
         case 0x01:  
             return "DS";
             break;
+        case 0x02:  
+            return "ES";
+        break;
+        case 0x03:  
+            return "SS";
+            break;
+        case 0x04:  
+            return "KS";
+        break;
         case 0x05:
             return "IP";
+            break;
+        case 0x06:  
+            return "SP";
+            break;
+        case 0x07:  
+            return "BP";
             break;
         case 0x08:
             return "CC";
@@ -267,13 +283,52 @@ void imprime_tab (int x){
     printf("| ");
 }
 void llamadissasembler(TVM *VMX){
-    int dirfisica=0,dirfisicaEP=0,topA=0,topB=0,orden=0,assemb=0,flag=0; 
-    int A,B;
+    int dirfisica=0,dirfisicaEP=0,dirfisicaKS=0,finKS=0;
+    int topA=0,topB=0,orden=0,assemb=0; 
+    int A,B,cantBytes,auxKS;
+    char c;
     int indiceCS = (unsigned int)(*VMX).REG[CS]>>16;
+    int indiceKS = (unsigned int)(*VMX).REG[KS]>>16;
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[CS]);
     dirfisicaEP=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
+    dirfisicaKS=memologitofisica((*VMX).SEG,(*VMX).REG[KS]);
+    finKS=(*VMX).SEG[indiceKS][0] + (*VMX).SEG[indiceKS][1];
+    
+    while(dirfisicaKS!=-1 && dirfisicaKS<finKS){
+        printf(" [%04X]\t",dirfisicaKS);
+        auxKS = dirfisicaKS;
+        cantBytes=0;
+        while((*VMX).RAM[auxKS] != '\0' && cantBytes<6){
+            printf("%02X\t",(*VMX).RAM[auxKS]);
+            cantBytes++;
+            auxKS++;
+        }
+
+        if ((*VMX).RAM[auxKS] != '\0'){
+            printf(".. \t");
+        }
+        else{
+            while(cantBytes<7){
+                printf("\t");
+                cantBytes++;
+            }
+        }
+        
+
+        printf("| \"");
+        while ((*VMX).RAM[dirfisicaKS] != '\0'){
+            c =(*VMX).RAM[dirfisicaKS];
+            if (isprint(c))
+                putchar(c);
+            else
+                putchar('.');
+            dirfisicaKS++;
+        }
+        printf("\" \n");
+        dirfisicaKS++;
+    }
  
-    while((*VMX).error==0 && orden!=0x0F && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no hay error y dentro de CS
+    while((*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no hay error y dentro de CS
             orden=(char)((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar          
             topB=(((*VMX).RAM[dirfisica] & MASC_TIPO_OP_B) >> 6);
             topA=((*VMX).RAM[dirfisica] & MASC_TIPO_OP_A) >> 4;
@@ -340,7 +395,7 @@ void llamadissasembler(TVM *VMX){
                 printf("\n"); 
                 }
             else{ 
-                if(orden <= 0x08){ // un operando
+                if((orden <= 0x08) || (orden >= 0x0B && orden <= 0x0D)){ // un operando
                     (*VMX).REG[IP] = ((*VMX).REG[CS]) | (((*VMX).REG[IP] & 0x00007FFF)+ topB + 1); //Se actualiza el registro IP
                     printf("%02X\t",(*VMX).RAM[dirfisica]);
                     switch (topB){
@@ -368,12 +423,11 @@ void llamadissasembler(TVM *VMX){
                             break;
                     }
                     printf("\n");
-                } else { // 0 operandos, en la primera parte solo es STOP
+                } else { // 0 operandos
                     (*VMX).REG[IP] = ((*VMX).REG[CS]) | (((*VMX).REG[IP] & 0x00007FFF)+ 1);
                     printf("%02X ",(*VMX).RAM[dirfisica]);
                     imprime_tab(0);
                     imprimeOrdenCeroOp((*VMX).RAM[dirfisica]);
-                    flag=1;
                     printf("\n");
                 }
             }
