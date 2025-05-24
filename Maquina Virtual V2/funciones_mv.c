@@ -223,13 +223,17 @@ void generaVMI(TVM vm,size_t tamanioRAM,char *nombreArchivo){
     FILE *fichero;
     int i=0,aux=0;
     unsigned char grabador,alto=0,bajo=0;
-    char *auxc;
-    strcpy(auxc,nombreArchivo);
-    char *punto = strchr(auxc, '.');
-    strcat(auxc,".vmi");
-    printf("Paso tercer sentencia");
+    char auxc[256]; // Buffer local seguro
+    strncpy(auxc, nombreArchivo, sizeof(auxc) - 1);
+    auxc[sizeof(auxc) - 1] = '\0'; // Asegura terminación nula
+
+    char *punto = strrchr(auxc, '.'); // Busca la última aparición de '.'
+    if (punto != NULL) {
+        strcpy(punto, ".vmi"); // Reemplaza la extensión
+    } else {
+        strcat(auxc, ".vmi"); // Si no hay extensión, la agrega
+    }
     fichero=fopen(auxc,"wb");
-    printf("ENTRO VMI");
     if(fichero!=NULL){
         grabador='V';
         fwrite(&grabador,sizeof(unsigned char),1,fichero);
