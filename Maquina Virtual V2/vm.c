@@ -54,11 +54,12 @@ int main(int argc, char *argv[]){
         if(tarch==2)
             breakdown=1;
         else
-            breakdown=0;    }
-    else{
-            if (tarch==3)
+            breakdown=0;    
+    } else{
+            if (tarch==3){
+                breakdown=1;
                 cargaVMI(&VMX,argv[1],&compatible,&tamanioRAM); //Carga el segmento de datos en la memoria desde un .vmi
-            else
+            }else
                 printf("Error: No se ha indicado un archivo .vmx o .vmi\n");
     }
     (compatible)?iniciaEjecucion(&VMX,argv,argc,op1op,op2op,breakdown,tamanioRAM):printf("El archivo no es compatible. \n"); //Inicia la ejecucion del programa
@@ -96,10 +97,10 @@ int detectaArch(char *argv[]){ //Funcion que detecta si el archivo es un .vmx, u
 
 void sys_breakpoint(TVM *VMX, size_t tamanioRAM, char *argv[],int *otro_breakpoint){
     char accion;
-    generaVMI(*VMX,tamanioRAM,argv[2]);
+    generaVMI(*VMX,tamanioRAM,argv[2]); //CORREGIR: el .vmi puede estar en la posicion 1 si no hay vmx y si vmi, 
     
     do{
-        scanf(" %c,",&accion);
+        accion = getchar();
     } while(accion != 'g' && accion != 'q' && accion != '\n');
     
     switch(accion){
@@ -177,7 +178,7 @@ void cargaVMI(TVM *VMX,char *nombreArchivo,int *compatible,size_t *tamanioRAM){
 
 int verificaVMI(char vec[6]){ //Funcion que verifica la cabecera del archivo vmx
     int i=0;
-    char cabecera[6]={'V','M','I','2','5','1'};
+    char cabecera[6]={'V','M','I','2','5',1};
     while (i<6 && vec[i]==cabecera[i]){
         i++;
     }   
@@ -430,9 +431,9 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
     if(i<argc && strcmp(argv[i],"-d")==0)
         llamadissasembler(VMX,(*VMX).REG[IP]); //Desensambla el programa
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
-    printf("Iniciando la ejecucion del programa...\n");
+    printf("Iniciando la ejecucion del programa...\n");   
     //       MIENTRAS:  NO ES STOP     Y  DIR FISICA ES VALIDA  Y NO HAY ERROR         Y DIR FISICA DENTRO DEL CODE SEGMENT  
-    while((*VMX).RAM[dirfisica]!=0x0F && dirfisica!=0x0E && dirfisica!=NULO && (*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no sea un stop, no sea un ret, no haya error y esté dentro del CS
+    while((*VMX).RAM[dirfisica]!=0x0F && dirfisica!=NULO && (*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no sea un stop, no sea un ret, no haya error y esté dentro del CS
         orden=((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar   
         if(!(orden>=0x00 && orden<=0x08) && !(orden>=0x0B && orden<=0x0E) && !(orden>=0x10 && orden<=0x1E)){ ///PREGUNTAR SI LA ORDEN ES INVALIDA: cuando el codigo de operacion de la instruccion a ejecutar no existe 
             (*VMX).error= 1;
@@ -474,10 +475,10 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
                         break;
                     case 0x02: //imnediato.
                         inmediato = armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]);
-                        if((orden & 0x0F)==0x00 && inmediato==0x0F && breakdown)
+                        if((orden & 0x00)==0x00 && inmediato==0x0F && breakdown)
                             otro_breakpoint = 1;
                         else{
-                            if (((orden & 0x0F)!=0x00) || ((orden & 0x0F)==0x00 && inmediato!=0x0F))
+                            if (((orden & 0x00)!=0x00) || ((orden & 0x0F)==0x00 && inmediato!=0x0F))
                                 op1op[(orden & 0x0F)](inmediato,topB,VMX);
                         }
                         break;
@@ -489,7 +490,7 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
             if(otro_breakpoint){
                 sys_breakpoint(VMX,tamanioRAM,argv,&otro_breakpoint);
             }
-        dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
+            dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
         }
     }
     switch ((*VMX).error){
@@ -508,5 +509,5 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
         case 6: printf("Error: Stack Underflow \n");
                 break;
     }
-     generaVMI(*VMX,tamanioRAM,argv[1]);   //LINEA PARA GENERAR VMIs DE PRUEBA
+    //generaVMI(*VMX,tamanioRAM,argv[1]);   //LINEA PARA GENERAR VMIs DE PRUEBA
 }

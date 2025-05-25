@@ -8,7 +8,9 @@ MAIN:   push bp
         push edx
         
         call    heap_init    ; inicializa memoria dinámica
-
+	
+	sys 0x0F     ; genera .vmi para usar debugger
+	
         mov edx, bp
         sub edx, root        ; edx = &root
         mov [edx], null      ; inicializo root = null
