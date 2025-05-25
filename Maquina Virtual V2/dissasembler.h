@@ -20,4 +20,4 @@ char* devuelveRegistroAlto(unsigned char car);
 
 int memologitofisica(short int SEG[SECCIONES][ENTRADAS],unsigned int);
 
-void llamadissasembler(TVM*);
+void llamadissasembler(TVM*,int);

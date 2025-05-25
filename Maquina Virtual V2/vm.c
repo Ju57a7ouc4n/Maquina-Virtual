@@ -428,7 +428,7 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
     while(i<argc && strcmp(argv[i],"-d")!=0)
        i++;
     if(i<argc && strcmp(argv[i],"-d")==0)
-        llamadissasembler(VMX); //Desensambla el programa
+        llamadissasembler(VMX,(*VMX).REG[IP]); //Desensambla el programa
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
     printf("Iniciando la ejecucion del programa...\n");
     //       MIENTRAS:  NO ES STOP     Y  DIR FISICA ES VALIDA  Y NO HAY ERROR         Y DIR FISICA DENTRO DEL CODE SEGMENT  
