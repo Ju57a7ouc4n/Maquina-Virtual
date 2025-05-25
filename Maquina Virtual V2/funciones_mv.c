@@ -246,10 +246,10 @@ void generaVMI(TVM vm,size_t tamanioRAM,char *nombreArchivo){
         fwrite(&grabador,sizeof(unsigned char),1,fichero);
         grabador=1;
         fwrite(&grabador,sizeof(unsigned char),1,fichero);
-        aux=tamanioRAM/1024;
+        aux=tamanioRAM/1024; 
         alto=(aux&0xFF00)>>8;
         bajo=aux&0x00FF;
-        grabador=alto;
+        grabador=alto; // CHE EL CARGA CS TIENE UNA VARIABLE DE CONTROL QUE SE LLAMA H CREO QUE LEE, GRABA Y SUMA
         fwrite(&grabador,sizeof(unsigned char),1,fichero);
         grabador=bajo;
         fwrite(&grabador,sizeof(unsigned char),1,fichero);

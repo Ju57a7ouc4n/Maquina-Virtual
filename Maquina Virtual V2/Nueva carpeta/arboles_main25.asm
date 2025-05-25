@@ -1,15 +1,15 @@
 \\include  "btrees25.asm"
 
 root  equ    4
-MAIN:   push bp
+MAIN:   sys 0x0F     ; genera .vmi para usar debugger
+
+	push bp
         mov bp, sp
         sub sp, 4 ; root de ABB
         push eax
         push edx
         
         call    heap_init    ; inicializa memoria dinámica
-	
-	sys 0x0F     ; genera .vmi para usar debugger
 	
         mov edx, bp
         sub edx, root        ; edx = &root

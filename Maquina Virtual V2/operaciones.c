@@ -39,9 +39,7 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
         break;  
         
         // 11: memoria
-
-        ///////////// EL PROBLEMA ESTA ACA //////////// 
-        case 0x03:     
+        case 0x03:
             dir = recupera_direccion_operando(A,vm);
             if (dir!=NULO){ //!!!!fallo de segmento si dir==-1 
                 mod =  A & MASC_MODIFICADOR_MEM;
@@ -78,8 +76,6 @@ void MOV (int A, int topA, int B, int topB, TVM *vm) {
                 vm->error = 3;
             }   //!!!! else aborta la ejecucion del programa
         break;     
-        ///////////// EL PROBLEMA ESTA ACA //////////// 
-
         }
 }
 
@@ -346,22 +342,21 @@ void NOT (int A, int topA, TVM *vm){
 
 void PUSH (int A, int topA, TVM *vm){
     int valA = recupera_valor_operando(vm,topA,A);
-    
-    int memSP = 0x00000060; //el PUSH es un MOV de de un registro, inmediato o memoria a una posicion de memoria
+    int memSP = 0x000060; //el PUSH es un MOV de de un registro, inmediato o memoria a una posicion de memoria
                             // el 6 es el valor que representa el SP y el 0 dice que son 4 bytes, los primeros 000000 dicen que no hay offset
     (*vm).REG[SP] -= 4;
-    if ((*vm).REG[SP] > (*vm).REG[SS])
+    if ((*vm).REG[SP] >= (*vm).REG[SS])
         MOV(memSP,3,valA,2,vm); // 
-        else
+    else
         (*vm).error = 5; //stack overflow
 }  
 
 void POP (int A, int topA, TVM *vm){
-    int B = 0x00000060; //el POP es un MOV de una posicion de memoria apuntado por SP a un registro o memoria
+    int memSP = 0x000060; //el POP es un MOV de una posicion de memoria apuntado por SP a un registro o memoria
                         // el 6 es el valor que representa el SP y el 0 dice que son 4 bytes, los primeros 000000 dicen que no hay offset
-
-    if (((*vm).REG[SP] & 0xFFFF) + 4 < ((*vm).SEG[((*vm).REG[SS]>>16) & 0xF][1])){
-        MOV(A,topA,B,3,vm);
+    int tamPila = ((unsigned int)(*vm).SEG[((*vm).REG[SS] & 0xFFFF0000) >> 16][1]);
+    if (((*vm).REG[SP] & 0xFFFF) + 4 <= tamPila){
+        MOV(A,topA,memSP,3,vm);
         (*vm).REG[SP] += 4;
     } else
         (*vm).error = 6; //stack underflow

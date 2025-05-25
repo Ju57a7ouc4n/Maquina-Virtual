@@ -44,7 +44,7 @@ int main(int argc, char *argv[]){
     VMX.error=0;
     int compatible=1,k,i,j=0,TPS=0,tarch=0,breakdown=0,PPP,cantp;
     void (*op2op[OP2])(int, int, int, int, TVM*)={MOV, ADD, SUB, SWAP, MUL, DIV, CMP, SHL, SHR, AND, OR, XOR, LDL, LDH, RND};
-    void (*op1op[OP1])(int, int, TVM*)={SYS, JMP, JZ, JP, JN, JNZ, JNP, JNN, NOT,NULL,NULL,PUSH,POP,CALL,RET};
+    void (*op1op[OP1])(int, int, TVM*)={SYS, JMP, JZ, JP, JN, JNZ, JNP, JNN, NOT,NULL,NULL, PUSH, POP, CALL, RET};
     tarch=detectaArch(argv);
     if (tarch==1 || tarch==2){
         iniciaRAM(argc,argv,&VMX,&tamanioRAM); //Inicia la memoria RAM
@@ -382,6 +382,9 @@ void Inicializacion(TVM *VMX,char *nombreArchivo,int *compatible, int TPS,size_t
             if((*compatible)){
                 AjustaVecTam(VecTamSeg,TPS);//Tamanio del param segment
                 armaTabla(VMX,VecTamSeg,OffsetEP,tamanioRAM); //Arma la tabla de segmentos
+                for (int m=0 ; m<tamanioRAM ; m++){
+                    (*VMX).RAM[m]=0;
+                }
                 //CARGA CS
                 dirBaseCS=memologitofisica((*VMX).SEG,(*VMX).REG[CS]);
                 while(i<VecTamSeg[CS+2]){
@@ -470,16 +473,21 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
             else{ //Un operando
                 (*VMX).REG[IP] = ((*VMX).REG[CS]) | (((*VMX).REG[IP] & 0x00007FFF) + topB + 1); //Se actualiza el registro IP
                 switch (topB){
+                    case 0x00: //RET
+                        RET(0,0,VMX);
+                        break;
                     case 0x01: //registro.
                         op1op[(orden & 0x0F)]((int)(*VMX).RAM[dirfisica+1],topB,VMX);
                         break;
                     case 0x02: //imnediato.
+                        inmediato = 0;
                         inmediato = armaInmediato((*VMX).RAM[dirfisica+1],(*VMX).RAM[dirfisica+2]);
-                        if((orden & 0x00)==0x00 && inmediato==0x0F && breakdown)
+                        if(orden==0x00 && inmediato==0x0F && breakdown){
                             otro_breakpoint = 1;
-                        else{
-                            if (((orden & 0x00)!=0x00) || ((orden & 0x0F)==0x00 && inmediato!=0x0F))
+                        }else{
+                            if ((orden==0x00 && inmediato!=0x0F) || (orden != 0x00)){
                                 op1op[(orden & 0x0F)](inmediato,topB,VMX);
+                            }
                         }
                         break;
                     case 0x03: //memoria.
@@ -509,5 +517,5 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
         case 6: printf("Error: Stack Underflow \n");
                 break;
     }
-    //generaVMI(*VMX,tamanioRAM,argv[1]);   //LINEA PARA GENERAR VMIs DE PRUEBA
+    generaVMI(*VMX,tamanioRAM,argv[1]);   //LINEA PARA GENERAR VMIs DE PRUEBA
 }
