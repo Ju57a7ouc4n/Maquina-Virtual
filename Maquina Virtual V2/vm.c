@@ -54,8 +54,7 @@ int main(int argc, char *argv[]){
         if(tarch==2)
             breakdown=1;
         else
-            breakdown=0;
-    }
+            breakdown=0;    }
     else{
             if (tarch==3)
                 cargaVMI(&VMX,argv[1],&compatible,&tamanioRAM); //Carga el segmento de datos en la memoria desde un .vmi
@@ -426,7 +425,6 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
     char orden;
     int indiceCS = (unsigned int)(*VMX).REG[CS]>>16;
     int otro_breakpoint=0;
-
     while(i<argc && strcmp(argv[i],"-d")!=0)
        i++;
     if(i<argc && strcmp(argv[i],"-d")==0)
@@ -434,7 +432,7 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
     printf("Iniciando la ejecucion del programa...\n");
     //       MIENTRAS:  NO ES STOP     Y  DIR FISICA ES VALIDA  Y NO HAY ERROR         Y DIR FISICA DENTRO DEL CODE SEGMENT  
-    while((*VMX).RAM[dirfisica]!=0x0F && dirfisica!=NULO && (*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no sea un stop, no sea un ret, no haya error y esté dentro del CS
+    while((*VMX).RAM[dirfisica]!=0x0F && dirfisica!=0x0E && dirfisica!=NULO && (*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no sea un stop, no sea un ret, no haya error y esté dentro del CS
         orden=((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar   
         if(!(orden>=0x00 && orden<=0x08) && !(orden>=0x0B && orden<=0x0E) && !(orden>=0x10 && orden<=0x1E)){ ///PREGUNTAR SI LA ORDEN ES INVALIDA: cuando el codigo de operacion de la instruccion a ejecutar no existe 
             (*VMX).error= 1;
@@ -510,5 +508,5 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
         case 6: printf("Error: Stack Underflow \n");
                 break;
     }
-    // generaVMI(*VMX,tamanioRAM,argv[1]);   //LINEA PARA GENERAR VMIs DE PRUEBA
+     generaVMI(*VMX,tamanioRAM,argv[1]);   //LINEA PARA GENERAR VMIs DE PRUEBA
 }

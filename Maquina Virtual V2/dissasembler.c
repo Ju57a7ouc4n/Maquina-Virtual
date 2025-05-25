@@ -292,8 +292,8 @@ void llamadissasembler(TVM *VMX){
     dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[CS]);
     dirfisicaEP=memologitofisica((*VMX).SEG,(*VMX).REG[IP]);
     dirfisicaKS=memologitofisica((*VMX).SEG,(*VMX).REG[KS]);
-    finKS=(*VMX).SEG[indiceKS][0] + (*VMX).SEG[indiceKS][1];
-    
+    if(dirfisicaKS!=-1)
+        finKS=(*VMX).SEG[indiceKS][0] + (*VMX).SEG[indiceKS][1];
     while(dirfisicaKS!=-1 && dirfisicaKS<finKS){
         printf(" [%04X]\t",dirfisicaKS);
         auxKS = dirfisicaKS;
@@ -327,7 +327,6 @@ void llamadissasembler(TVM *VMX){
         printf("\" \n");
         dirfisicaKS++;
     }
- 
     while((*VMX).error==0 && dirfisica<((*VMX).SEG[indiceCS][0] + (*VMX).SEG[indiceCS][1])){ //Mientras no hay error y dentro de CS
             orden=(char)((*VMX).RAM[dirfisica] & MASC_COD_OPERACION); //Se obtiene la orden a ejecutar          
             topB=(((*VMX).RAM[dirfisica] & MASC_TIPO_OP_B) >> 6);
