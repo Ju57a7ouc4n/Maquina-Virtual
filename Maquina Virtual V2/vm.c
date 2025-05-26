@@ -48,6 +48,9 @@ int main(int argc, char *argv[]){
     tarch=detectaArch(argv);
     if (tarch==1 || tarch==2){
         iniciaRAM(argc,argv,&VMX,&tamanioRAM); //Inicia la memoria RAM
+        for (int m=0 ; m<tamanioRAM ; m++){
+            VMX.RAM[m]=0;
+        }
         cargaPS(&VMX,argv,argc,&TPS,&PPP,&cantp); //Carga el segmento de datos en la memoria
         Inicializacion(&VMX,argv[1],&compatible,TPS,tamanioRAM); //Carga el segmento de codigo en la memoria desde un .vmx
         IniciaPila(&VMX,PPP,cantp);
@@ -209,7 +212,7 @@ void cargaParametro(TVM *VMX, char *argv, int *vp, int *cantp, int *sig){
     vp[*cantp]=(*sig); //Se guarda la posicion del puntero
     (*cantp)++;
     while(i<tamanio){
-        (*VMX).RAM[(*sig)] = (unsigned char)argv[i];
+        (*VMX).RAM[(*sig)] = argv[i]; //Carga el parametro en la memoria
         (*sig)++;
         i++;
     }
@@ -382,9 +385,6 @@ void Inicializacion(TVM *VMX,char *nombreArchivo,int *compatible, int TPS,size_t
             if((*compatible)){
                 AjustaVecTam(VecTamSeg,TPS);//Tamanio del param segment
                 armaTabla(VMX,VecTamSeg,OffsetEP,tamanioRAM); //Arma la tabla de segmentos
-                for (int m=0 ; m<tamanioRAM ; m++){
-                    (*VMX).RAM[m]=0;
-                }
                 //CARGA CS
                 dirBaseCS=memologitofisica((*VMX).SEG,(*VMX).REG[CS]);
                 while(i<VecTamSeg[CS+2]){
