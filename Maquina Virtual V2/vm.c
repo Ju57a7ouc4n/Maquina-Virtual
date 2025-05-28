@@ -60,7 +60,7 @@ int main(int argc, char *argv[]){
             breakdown=0;    
     } else{
             if (tarch==3){
-                breakdown=1;
+                breakdown=0;
                 cargaVMI(&VMX,argv[1],&compatible,&tamanioRAM); //Carga el segmento de datos en la memoria desde un .vmi
             }else
                 printf("Error: No se ha indicado un archivo .vmx o .vmi\n");
@@ -100,8 +100,10 @@ int detectaArch(char *argv[]){ //Funcion que detecta si el archivo es un .vmx, u
 
 void sys_breakpoint(TVM *VMX, size_t tamanioRAM, char *argv[],int *otro_breakpoint){
     char accion;
-    generaVMI(*VMX,tamanioRAM,argv[2]); //CORREGIR: el .vmi puede estar en la posicion 1 si no hay vmx y si vmi, 
-    
+    if(strstr(argv[2],".vmi")!=NULL)
+        generaVMI(*VMX,tamanioRAM,argv[2]); //CORREGIR: el .vmi puede estar en la posicion 1 si no hay vmx y si vmi, 
+    else
+        generaVMI(*VMX,tamanioRAM,argv[1]);
     do{
         accion = getchar();
     } while(accion != 'g' && accion != 'q' && accion != '\n');
@@ -124,7 +126,8 @@ void sys_breakpoint(TVM *VMX, size_t tamanioRAM, char *argv[],int *otro_breakpoi
 void cargaVMI(TVM *VMX,char *nombreArchivo,int *compatible,size_t *tamanioRAM){
     FILE *fichero;
     short unsigned int m=0;
-    int aux=0,dirfisica,base,offset;
+    int dirfisica,base,offset;
+    unsigned int aux=0;
     unsigned char lector;
     char vec[6];
     fichero=fopen(nombreArchivo,"rb");
@@ -139,36 +142,42 @@ void cargaVMI(TVM *VMX,char *nombreArchivo,int *compatible,size_t *tamanioRAM){
             aux=aux<<8;
             fread(&lector,sizeof(unsigned char),1,fichero);
             aux|=lector;
-            *tamanioRAM=aux*1024;
+            printf("AUX: %d\n",aux);
+            *tamanioRAM=(size_t)aux*1024;
+            printf("TAMAÑO RAM: %d\n",*tamanioRAM);
             VMX->RAM = (unsigned char*)malloc(*tamanioRAM * sizeof(unsigned char));
+            for(int u=0;u<16;u++)
+                (*VMX).REG[u]=0;
             for(int j=0;j<16;j++){ //Este ciclo arma los registros
                 fread(&lector,sizeof(unsigned char),1,fichero);
-                (*VMX).REG[j]|(lector<<24);
+                (*VMX).REG[j]|=(lector<<24);
                 fread(&lector,sizeof(unsigned char),1,fichero);
-                (*VMX).REG[j]|(lector<<16);
+                (*VMX).REG[j]|=(lector<<16);
                 fread(&lector,sizeof(unsigned char),1,fichero);
-                (*VMX).REG[j]|(lector<<8);
+                (*VMX).REG[j]|=(lector<<8);
                 fread(&lector,sizeof(unsigned char),1,fichero);
-                (*VMX).REG[j]|lector;
+                (*VMX).REG[j]|=lector;
             }
             for(int k=0;k<8;k++){ //Este ciclo arma la bendita tabla de segmentos
+                base=0;
+                offset=0;
                 fread(&lector,sizeof(unsigned char),1,fichero);
-                base|lector<<8;
+                base|=lector<<8;
                 fread(&lector,sizeof(unsigned char),1,fichero);
-                base|lector;
+                base|=lector;
                 fread(&lector,sizeof(unsigned char),1,fichero);
-                offset|lector<<8;
+                offset|=lector<<8;
                 fread(&lector,sizeof(unsigned char),1,fichero);
-                offset|lector;
+                offset|=lector;
                 (*VMX).SEG[k][0]=base;
                 (*VMX).SEG[k][1]=offset;
             }
             m=0;
-            dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[CS]);
+           // dirfisica=memologitofisica((*VMX).SEG,(*VMX).REG[CS]);
             while(fread(&lector,sizeof(unsigned char),1,fichero)==1){
-                (*VMX).RAM[dirfisica]=lector;
+                (*VMX).RAM[m]=lector;
                 m+=1;
-                dirfisica=memologitofisica((*VMX).SEG, m);
+                //dirfisica=memologitofisica((*VMX).SEG, m);
             }
             *compatible=1;
         }
@@ -176,6 +185,7 @@ void cargaVMI(TVM *VMX,char *nombreArchivo,int *compatible,size_t *tamanioRAM){
             *compatible=0;
             printf("Error: Archivo .vmi no compatible.\n");
         }
+        fclose(fichero);
     }
 }
 
@@ -230,7 +240,7 @@ void cargaPS(TVM *VMX,char *argv[],int argc,int *TPS,int *PPP,int *cantp){ //Car
         while(++i < argc){  
             cargaParametro(VMX,argv[i],vp,cantp,&sig);
         }
-        (*PPP) |= sig & 0xFFFF; 
+        (*PPP)=sig;
         while(k<(*cantp)){ //sig: proxima posicion en la memoria donde se escribe el puntero del parametro K
             (*VMX).RAM[sig]=(vp[k] & MASC_BYTE1)>>24;
             (*VMX).RAM[sig+1]=(vp[k] & MASC_BYTE2)>>16;
@@ -429,6 +439,7 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
     char orden;
     int indiceCS = (unsigned int)(*VMX).REG[CS]>>16;
     int otro_breakpoint=0;
+    //generaVMI(*VMX,tamanioRAM,"hola");
     while(i<argc && strcmp(argv[i],"-d")!=0)
        i++;
     if(i<argc && strcmp(argv[i],"-d")==0)

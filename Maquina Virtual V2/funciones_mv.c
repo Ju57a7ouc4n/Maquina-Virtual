@@ -29,13 +29,13 @@ void recupera_direccion_registro(int contenido_registro,TVM *vm,int *indice_seg,
 int recupera_direccion_operando(int operando,TVM *vm){
     int indice_seg;
     int dir;
-    int offset = (unsigned int)(operando & MASC_OFFSET) >> 8;
+    int offset =(operando << 8) >> 16;
     int cod = (unsigned int)(operando & 0x000000F0 )>> 4;
     recupera_direccion_registro((*vm).REG[cod],vm,&indice_seg,&dir);   
     dir += offset;
     if (PermanezcoEnSegmento(vm,dir,indice_seg,0)) //verifica que el calculo de la direccion no se encuentre fuera de los limites del segmento
         return  dir;
-    else 
+    else
         return NULO;
 } 
 
@@ -122,7 +122,7 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
                         valor |= (vm->RAM[dir + i] & 0xFF);
                     }
                 }
-                else 
+                else
                     vm->error = 3; //!!!!fallo de segmento si quiero leer/escribir fuera de los limites del segmento
             }
             else
