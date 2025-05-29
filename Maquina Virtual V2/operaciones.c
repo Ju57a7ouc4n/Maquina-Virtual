@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #define NULO -1
+
 //Funcion que modica los bits NZ del registro CC 
 void NZ (int valor, TVM *vm){
     vm->REG[CC] = 0;
@@ -221,16 +222,35 @@ void SYS3(int dirMem, int cantCarac, TVM *vm) {
     int tamCadena;
     int IndiceEDX = ((*vm).REG[EDX]>>16) & 0xFFFF;
 
-    if (fgets(cadena, sizeof(cadena), stdin) == NULL) {
-        return;
-    }
+//    if (fgets(cadena, cantCarac + 1, stdin) != NULL) {
+//        size_t len = strcspn(cadena, "\n"); // Eliminar el salto de línea si está
+//        cadena[len] = '\0';
+
+//        memcpy(&(vm->RAM[dirMem]), cadena, len + 1); // Copia incluyendo '\0'
+//    } else {
+//        printf("Error al leer entrada.\n");
+//    } 
+
+   fgets(cadena, sizeof(cadena), stdin);
+   
 
     int len = strlen(cadena);
     if (len > 0 && cadena[len - 1] == '\n') {
         cadena[len - 1] = '\0';
         len--;
     }
+    if (len > 0 && len <= 2) {
+        char *endptr;
+        long valor = strtol(cadena, &endptr, 16);  // base 16
 
+        if (*endptr == '\0') {
+            // Se ingresó un número hexadecimal válido
+            // Guardamos solo 1 byte (como char con signo)
+            char byte = (char)valor;
+            (*vm).RAM[dirMem] = byte;
+            return;
+        }
+    }
     if (cantCarac == -1) {
         tamCadena = len;
     } else {
@@ -243,6 +263,8 @@ void SYS3(int dirMem, int cantCarac, TVM *vm) {
     } else{
         // ERROR: cadena fuera de segmento
     }
+
+    //sys_breakpoint(vm,MEMORIA,"pepon",0);
 }
 
 void SYS4 (int dirMem,TVM *vm){

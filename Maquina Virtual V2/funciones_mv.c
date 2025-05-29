@@ -162,6 +162,9 @@ void entrada(int *x,int formato)
             break;
         case 0x08: //hexadecimal.
             scanf("%x",x);
+            if (*x & 0x80) // Si el bit 7 (de un byte) esta en 1
+                *x |= 0xFFFFFF00; // Extiende el signo a 32 bits
+            printf("numero leido en decimal: %x \n",*x);
             break;
         case 0x10: //binario.
             scanf("%s",aux);

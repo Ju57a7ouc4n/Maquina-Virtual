@@ -438,8 +438,8 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
     int dirfisica,dirfisicaTCS,topA,topB,A,B,assemb=0,i=0,inmediato;
     char orden;
     int indiceCS = (unsigned int)(*VMX).REG[CS]>>16;
-    int otro_breakpoint=0;
-    //generaVMI(*VMX,tamanioRAM,"hola");
+    int otro_breakpoint=1;
+    generaVMI(*VMX,tamanioRAM,argv[1]);   //LINEA PARA GENERAR VMIs DE PRUEBA
     while(i<argc && strcmp(argv[i],"-d")!=0)
        i++;
     if(i<argc && strcmp(argv[i],"-d")==0)
@@ -528,5 +528,5 @@ void iniciaEjecucion(TVM *VMX, char *argv[], int argc, void(*op1op[])(), void(*o
         case 6: printf("Error: Stack Underflow \n");
                 break;
     }
-    generaVMI(*VMX,tamanioRAM,argv[1]);   //LINEA PARA GENERAR VMIs DE PRUEBA
+    generaVMI(*VMX,tamanioRAM,"pepon");   //LINEA PARA GENERAR VMIs DE PRUEBA
 }
