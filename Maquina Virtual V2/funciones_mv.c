@@ -121,6 +121,11 @@ int recupera_valor_operando(TVM *vm, int top, int operando){
                         valor <<= 8;
                         valor |= (vm->RAM[dir + i] & 0xFF);
                     }
+                    if (celdas == 1) { // byte
+                        valor = (signed char)(valor & 0xFF);
+                    } else if (celdas == 2) { // word
+                    valor = (short)(valor & 0xFFFF);
+                    }
                 }
                 else
                     vm->error = 3; //!!!!fallo de segmento si quiero leer/escribir fuera de los limites del segmento
@@ -164,7 +169,6 @@ void entrada(int *x,int formato)
             scanf("%x",x);
             if (*x & 0x80) // Si el bit 7 (de un byte) esta en 1
                 *x |= 0xFFFFFF00; // Extiende el signo a 32 bits
-            printf("numero leido en decimal: %x \n",*x);
             break;
         case 0x10: //binario.
             scanf("%s",aux);
